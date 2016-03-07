@@ -1,0 +1,8 @@
+﻿Group: Payment methods
+FriendlyName: CCAvenue
+SystemName: Payments.CCAvenue
+Version: 0.9
+SupportedVersions: 3.70
+Author: Addya
+DisplayOrder: 1
+FileName: Nop.Plugin.Payments.CCAvenue.dll

@@ -1,0 +1,77 @@
+﻿@{
+    Layout = "";
+}
+@model ConfigurationModel
+@using Nop.Plugin.Payments.CCAvenue.Models;
+@using Nop.Web.Framework;
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    <table class="adminContent">
+        
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.MerchantId):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.MerchantId)
+                @Html.ValidationMessageFor(model => model.MerchantId)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.Key):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.Key)
+                @Html.ValidationMessageFor(model => model.Key)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.AccessCode):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.AccessCode)
+                @Html.ValidationMessageFor(model => model.AccessCode)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.PayUri):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.PayUri)
+                @Html.ValidationMessageFor(model => model.PayUri)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.MerchantParam):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.MerchantParam)
+                @Html.ValidationMessageFor(model => model.MerchantParam)
+            </td>
+        </tr>
+
+        <tr>
+            <td class="adminTitle">
+                @Html.NopLabelFor(model => model.AdditionalFee):
+            </td>
+            <td class="adminData">
+                @Html.EditorFor(model => model.AdditionalFee)
+                @Html.ValidationMessageFor(model => model.AdditionalFee)
+            </td>
+        </tr>
+
+
+        <tr>
+            <td colspan="2">
+                <button type="submit" name="save" value="save" class="k-button">
+                    Save</button>
+            </td>
+        </tr>
+    </table>
+    
+}
