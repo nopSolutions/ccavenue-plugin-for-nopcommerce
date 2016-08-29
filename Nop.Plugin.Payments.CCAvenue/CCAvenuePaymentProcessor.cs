@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Web.Routing;
+using CCA.Util;
 using Nop.Core;
 using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
@@ -15,8 +16,6 @@ using Nop.Services.Localization;
 using Nop.Services.Payments;
 using Nop.Web.Framework;
 
-using CCA.Util;
-using System.Collections.Specialized;
 namespace Nop.Plugin.Payments.CCAvenue
 {
     /// <summary>
@@ -31,7 +30,7 @@ namespace Nop.Plugin.Payments.CCAvenue
         private readonly ICurrencyService _currencyService;
         private readonly CurrencySettings _currencySettings;
         private readonly IWebHelper _webHelper;
-        CCACrypto ccaCrypto = new CCACrypto();
+        private readonly CCACrypto _ccaCrypto;
         #endregion
 
         #region Ctor
@@ -45,11 +44,8 @@ namespace Nop.Plugin.Payments.CCAvenue
             this._currencyService = currencyService;
             this._currencySettings = currencySettings;
             this._webHelper = webHelper;
+            this._ccaCrypto = new CCACrypto();
         }
-
-        #endregion
-
-        #region Utilities
 
         #endregion
 
@@ -62,11 +58,8 @@ namespace Nop.Plugin.Payments.CCAvenue
         /// <returns>Process payment result</returns>
         public ProcessPaymentResult ProcessPayment(ProcessPaymentRequest processPaymentRequest)
         {
-            var result = new ProcessPaymentResult();
-            result.NewPaymentStatus = PaymentStatus.Pending;
-            return result;
+            return new ProcessPaymentResult { NewPaymentStatus = PaymentStatus.Pending };
         }
-
 
         /// <summary>
         /// Post process payment (used by payment gateways that require redirecting to a third-party URL)
@@ -74,13 +67,14 @@ namespace Nop.Plugin.Payments.CCAvenue
         /// <param name="postProcessPaymentRequest">Payment info required for an order processing</param>
         public void PostProcessPayment(PostProcessPaymentRequest postProcessPaymentRequest)
         {
-            var myUtility = new CCAvenueHelper();
-            var remotePostHelper = new RemotePost();
             var remotePostHelperData = new Dictionary<string, string>();
-            
-            remotePostHelper.FormName = "CCAvenueForm";
-            remotePostHelper.Url = _ccAvenuePaymentSettings.PayUri;
-            remotePostHelperData.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId.ToString());
+            var remotePostHelper = new RemotePost
+            {
+                FormName = "CCAvenueForm",
+                Url = _ccAvenuePaymentSettings.PayUri
+            };
+
+            remotePostHelperData.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId);
             remotePostHelperData.Add("Amount", postProcessPaymentRequest.Order.OrderTotal.ToString(new CultureInfo("en-US", false).NumberFormat));
             remotePostHelperData.Add("Currency", _currencyService.GetCurrencyById(_currencySettings.PrimaryStoreCurrencyId).CurrencyCode);
             remotePostHelperData.Add("Order_Id", postProcessPaymentRequest.Order.Id.ToString());
@@ -89,12 +83,12 @@ namespace Nop.Plugin.Payments.CCAvenue
             remotePostHelperData.Add("cancel_url", _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return");
             remotePostHelperData.Add("language", "EN");
 
-           // remotePostHelperData.Add("Checksum", myUtility.getchecksum(_ccAvenuePaymentSettings.MerchantId.ToString(), postProcessPaymentRequest.Order.Id.ToString(), postProcessPaymentRequest.Order.OrderTotal.ToString(), _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return", _ccAvenuePaymentSettings.Key));
-
-
+            //var myUtility = new CCAvenueHelper();
+            //remotePostHelperData.Add("Checksum", myUtility.getchecksum(_ccAvenuePaymentSettings.MerchantId.ToString(), postProcessPaymentRequest.Order.Id.ToString(), postProcessPaymentRequest.Order.OrderTotal.ToString(), _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return", _ccAvenuePaymentSettings.Key));
+            
             //Billing details
             remotePostHelperData.Add("billing_name", postProcessPaymentRequest.Order.BillingAddress.FirstName );
-           // remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1 + " " + postProcessPaymentRequest.Order.BillingAddress.Address2);
+            //remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1 + " " + postProcessPaymentRequest.Order.BillingAddress.Address2);
            
             remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1);
             remotePostHelperData.Add("billing_tel", postProcessPaymentRequest.Order.BillingAddress.PhoneNumber);
@@ -102,16 +96,10 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             remotePostHelperData.Add("billing_city", postProcessPaymentRequest.Order.BillingAddress.City);
             var billingStateProvince = postProcessPaymentRequest.Order.BillingAddress.StateProvince;
-            if (billingStateProvince != null)
-                remotePostHelperData.Add("billing_state", billingStateProvince.Abbreviation);
-            else
-                remotePostHelperData.Add("billing_state", "");
+            remotePostHelperData.Add("billing_state", billingStateProvince != null ? billingStateProvince.Abbreviation : string.Empty);
             remotePostHelperData.Add("billing_zip", postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode);
             var billingCountry = postProcessPaymentRequest.Order.BillingAddress.Country;
-            if (billingCountry != null)
-                remotePostHelperData.Add("billing_country", billingCountry.ThreeLetterIsoCode);
-            else
-                remotePostHelperData.Add("billing_country", "");
+            remotePostHelperData.Add("billing_country", billingCountry != null ? billingCountry.ThreeLetterIsoCode : string.Empty);
 
             //Delivery details
 
@@ -124,31 +112,24 @@ namespace Nop.Plugin.Payments.CCAvenue
                 remotePostHelperData.Add("delivery_tel", postProcessPaymentRequest.Order.ShippingAddress.PhoneNumber);
                 remotePostHelperData.Add("delivery_city", postProcessPaymentRequest.Order.ShippingAddress.City);
                 var deliveryStateProvince = postProcessPaymentRequest.Order.ShippingAddress.StateProvince;
-                if (deliveryStateProvince != null)
-                    remotePostHelperData.Add("delivery_state", deliveryStateProvince.Abbreviation);
-                else
-                    remotePostHelperData.Add("delivery_state", "");
+                remotePostHelperData.Add("delivery_state", deliveryStateProvince != null ? deliveryStateProvince.Abbreviation : string.Empty);
                 remotePostHelperData.Add("delivery_zip", postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode);
                 var deliveryCountry = postProcessPaymentRequest.Order.ShippingAddress.Country;
-                if (deliveryCountry != null)
-                    remotePostHelperData.Add("delivery_country", deliveryCountry.ThreeLetterIsoCode);
-                else
-                    remotePostHelperData.Add("delivery_country", "");
+                remotePostHelperData.Add("delivery_country", deliveryCountry != null ? deliveryCountry.ThreeLetterIsoCode : string.Empty);
             }
 
             remotePostHelperData.Add("Merchant_Param", _ccAvenuePaymentSettings.MerchantParam);
 
-            string strPOSTData = "";
+            var strPOSTData = string.Empty;
             foreach (var item in remotePostHelperData)
             {
-               // strPOSTData = strPOSTData +  item.Key.ToLower() + "=" + item.Value.ToLower() + "&";
+                //strPOSTData = strPOSTData +  item.Key.ToLower() + "=" + item.Value.ToLower() + "&";
                 strPOSTData = strPOSTData + item.Key.ToLower() + "=" + item.Value + "&";
             }
 
             try
             {
-                string strEncPOSTData = "";
-                strEncPOSTData = ccaCrypto.Encrypt(strPOSTData, _ccAvenuePaymentSettings.Key);
+                var strEncPOSTData = _ccaCrypto.Encrypt(strPOSTData, _ccAvenuePaymentSettings.Key);
                 remotePostHelper.Add("encRequest", strEncPOSTData);
                 remotePostHelper.Add("access_code", _ccAvenuePaymentSettings.AccessCode);
                 
@@ -158,70 +139,6 @@ namespace Nop.Plugin.Payments.CCAvenue
             {
                 throw new Exception(ep.Message);
             }
-        }
-
-
-        /// <summary>
-        /// Post process payment (used by payment gateways that require redirecting to a third-party URL)
-        /// </summary>
-        /// <param name="postProcessPaymentRequest">Payment info required for an order processing</param>
-        public void PostProcessPaymentOld(PostProcessPaymentRequest postProcessPaymentRequest)
-        {
-            var myUtility = new CCAvenueHelper();
-
-            var remotePostHelper = new RemotePost();
-            remotePostHelper.FormName = "CCAvenueForm";
-            remotePostHelper.Url = _ccAvenuePaymentSettings.PayUri;
-            remotePostHelper.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId.ToString());
-            remotePostHelper.Add("Amount", postProcessPaymentRequest.Order.OrderTotal.ToString(new CultureInfo("en-US", false).NumberFormat));
-            remotePostHelper.Add("Currency", _currencyService.GetCurrencyById(_currencySettings.PrimaryStoreCurrencyId).CurrencyCode);
-            remotePostHelper.Add("Order_Id", postProcessPaymentRequest.Order.Id.ToString());
-            remotePostHelper.Add("Redirect_Url", _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return");
-            remotePostHelper.Add("Checksum", myUtility.getchecksum(_ccAvenuePaymentSettings.MerchantId.ToString(), postProcessPaymentRequest.Order.Id.ToString(), postProcessPaymentRequest.Order.OrderTotal.ToString(), _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return", _ccAvenuePaymentSettings.Key));
-
-
-            //Billing details
-            remotePostHelper.Add("billing_cust_name", postProcessPaymentRequest.Order.BillingAddress.FirstName);
-            remotePostHelper.Add("billing_cust_address", postProcessPaymentRequest.Order.BillingAddress.Address1);
-            remotePostHelper.Add("billing_cust_tel", postProcessPaymentRequest.Order.BillingAddress.PhoneNumber);
-            remotePostHelper.Add("billing_cust_email", postProcessPaymentRequest.Order.BillingAddress.Email);
-            remotePostHelper.Add("billing_cust_city", postProcessPaymentRequest.Order.BillingAddress.City);
-            var billingStateProvince = postProcessPaymentRequest.Order.BillingAddress.StateProvince;
-            if (billingStateProvince != null)
-                remotePostHelper.Add("billing_cust_state", billingStateProvince.Abbreviation);
-            else
-                remotePostHelper.Add("billing_cust_state", "");
-            remotePostHelper.Add("billing_zip_code", postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode);
-            var billingCountry = postProcessPaymentRequest.Order.BillingAddress.Country;
-            if (billingCountry != null)
-                remotePostHelper.Add("billing_cust_country", billingCountry.ThreeLetterIsoCode);
-            else
-                remotePostHelper.Add("billing_cust_country", "");
-
-            //Delivery details
-
-            if (postProcessPaymentRequest.Order.ShippingStatus != ShippingStatus.ShippingNotRequired)
-            {
-                remotePostHelper.Add("delivery_cust_name", postProcessPaymentRequest.Order.ShippingAddress.FirstName);
-                remotePostHelper.Add("delivery_cust_address", postProcessPaymentRequest.Order.ShippingAddress.Address1);
-                remotePostHelper.Add("delivery_cust_notes", string.Empty);
-                remotePostHelper.Add("delivery_cust_tel", postProcessPaymentRequest.Order.ShippingAddress.PhoneNumber);
-                remotePostHelper.Add("delivery_cust_city", postProcessPaymentRequest.Order.ShippingAddress.City);
-                var deliveryStateProvince = postProcessPaymentRequest.Order.ShippingAddress.StateProvince;
-                if (deliveryStateProvince != null)
-                    remotePostHelper.Add("delivery_cust_state", deliveryStateProvince.Abbreviation);
-                else
-                    remotePostHelper.Add("delivery_cust_state", "");
-                remotePostHelper.Add("delivery_zip_code", postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode);
-                var deliveryCountry = postProcessPaymentRequest.Order.ShippingAddress.Country;
-                if (deliveryCountry != null)
-                    remotePostHelper.Add("delivery_cust_country", deliveryCountry.ThreeLetterIsoCode);
-                else
-                    remotePostHelper.Add("delivery_cust_country", "");
-            }
-
-            remotePostHelper.Add("Merchant_Param", _ccAvenuePaymentSettings.MerchantParam);
-            remotePostHelper.Post();
         }
 
         /// <summary>
@@ -325,10 +242,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 return false;
 
             //let's ensure that at least 1 minute passed after order is placed
-            if ((DateTime.UtcNow - order.CreatedOnUtc).TotalMinutes < 1)
-                return false;
-
-            return true;
+            return !((DateTime.UtcNow - order.CreatedOnUtc).TotalMinutes < 1);
         }
 
         /// <summary>
@@ -371,7 +285,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 AccessCode = "",
                 MerchantParam = "",
 
-                // PayUri = "https://www.ccavenue.com/shopzone/cc_details.jsp",
+                //PayUri = "https://www.ccavenue.com/shopzone/cc_details.jsp",
                 PayUri = "https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction",
                 AdditionalFee = 0,
             };

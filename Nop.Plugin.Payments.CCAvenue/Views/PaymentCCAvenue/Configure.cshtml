@@ -7,71 +7,80 @@
 @using (Html.BeginForm())
 {
     @Html.AntiForgeryToken()
-    <table class="adminContent">
-        
-        <tr>
-            <td class="adminTitle">
-                @Html.NopLabelFor(model => model.MerchantId):
-            </td>
-            <td class="adminData">
-                @Html.EditorFor(model => model.MerchantId)
-                @Html.ValidationMessageFor(model => model.MerchantId)
-            </td>
-        </tr>
-        <tr>
-            <td class="adminTitle">
-                @Html.NopLabelFor(model => model.Key):
-            </td>
-            <td class="adminData">
-                @Html.EditorFor(model => model.Key)
-                @Html.ValidationMessageFor(model => model.Key)
-            </td>
-        </tr>
-        <tr>
-            <td class="adminTitle">
-                @Html.NopLabelFor(model => model.AccessCode):
-            </td>
-            <td class="adminData">
-                @Html.EditorFor(model => model.AccessCode)
-                @Html.ValidationMessageFor(model => model.AccessCode)
-            </td>
-        </tr>
-        <tr>
-            <td class="adminTitle">
-                @Html.NopLabelFor(model => model.PayUri):
-            </td>
-            <td class="adminData">
-                @Html.EditorFor(model => model.PayUri)
-                @Html.ValidationMessageFor(model => model.PayUri)
-            </td>
-        </tr>
-        <tr>
-            <td class="adminTitle">
-                @Html.NopLabelFor(model => model.MerchantParam):
-            </td>
-            <td class="adminData">
-                @Html.EditorFor(model => model.MerchantParam)
-                @Html.ValidationMessageFor(model => model.MerchantParam)
-            </td>
-        </tr>
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-body">
 
-        <tr>
-            <td class="adminTitle">
-                @Html.NopLabelFor(model => model.AdditionalFee):
-            </td>
-            <td class="adminData">
-                @Html.EditorFor(model => model.AdditionalFee)
-                @Html.ValidationMessageFor(model => model.AdditionalFee)
-            </td>
-        </tr>
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.NopLabelFor(model => model.MerchantId)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.NopEditorFor(model => model.MerchantId)
+                        @Html.ValidationMessageFor(model => model.MerchantId)
+                    </div>
+                </div>
 
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.NopLabelFor(model => model.Key)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.NopEditorFor(model => model.Key)
+                        @Html.ValidationMessageFor(model => model.Key)
+                    </div>
+                </div>
 
-        <tr>
-            <td colspan="2">
-                <button type="submit" name="save" value="save" class="k-button">
-                    Save</button>
-            </td>
-        </tr>
-    </table>
-    
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.NopLabelFor(model => model.AccessCode)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.NopEditorFor(model => model.AccessCode)
+                        @Html.ValidationMessageFor(model => model.AccessCode)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.NopLabelFor(model => model.PayUri)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.NopEditorFor(model => model.PayUri)
+                        @Html.ValidationMessageFor(model => model.PayUri)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.NopLabelFor(model => model.MerchantParam)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.NopEditorFor(model => model.MerchantParam)
+                        @Html.ValidationMessageFor(model => model.MerchantParam)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        @Html.NopLabelFor(model => model.AdditionalFee)
+                    </div>
+                    <div class="col-md-9">
+                        @Html.NopEditorFor(model => model.AdditionalFee)
+                        @Html.ValidationMessageFor(model => model.AdditionalFee)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        &nbsp;
+                    </div>
+                    <div class="col-md-9">
+                        <input type="submit" name="save" class="btn bg-blue" value="@T("Admin.Common.Save")" />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
 }

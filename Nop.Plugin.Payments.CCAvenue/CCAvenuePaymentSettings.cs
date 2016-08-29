@@ -9,6 +9,6 @@ namespace Nop.Plugin.Payments.CCAvenue
         public string MerchantParam { get; set; }
         public string PayUri { get; set; }
         public decimal AdditionalFee { get; set; }
-        public string AccessCode { get; set; }//Access Code
+        public string AccessCode { get; set; }
     }
 }
