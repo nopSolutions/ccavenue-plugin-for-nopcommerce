@@ -109,7 +109,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             remotePostHelperData.Add("billing_zip", postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode);
             var billingCountry = postProcessPaymentRequest.Order.BillingAddress.Country;
             if (billingCountry != null)
-                remotePostHelperData.Add("billing_country", billingCountry.ThreeLetterIsoCode);
+                remotePostHelperData.Add("billing_country", billingCountry.Name);
             else
                 remotePostHelperData.Add("billing_country", "");
 
@@ -131,7 +131,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 remotePostHelperData.Add("delivery_zip", postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode);
                 var deliveryCountry = postProcessPaymentRequest.Order.ShippingAddress.Country;
                 if (deliveryCountry != null)
-                    remotePostHelperData.Add("delivery_country", deliveryCountry.ThreeLetterIsoCode);
+                    remotePostHelperData.Add("delivery_country", deliveryCountry.Name);
                 else
                     remotePostHelperData.Add("delivery_country", "");
             }
@@ -194,7 +194,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             remotePostHelper.Add("billing_zip_code", postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode);
             var billingCountry = postProcessPaymentRequest.Order.BillingAddress.Country;
             if (billingCountry != null)
-                remotePostHelper.Add("billing_cust_country", billingCountry.ThreeLetterIsoCode);
+                remotePostHelper.Add("billing_cust_country", billingCountry.Name);
             else
                 remotePostHelper.Add("billing_cust_country", "");
 
@@ -215,7 +215,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 remotePostHelper.Add("delivery_zip_code", postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode);
                 var deliveryCountry = postProcessPaymentRequest.Order.ShippingAddress.Country;
                 if (deliveryCountry != null)
-                    remotePostHelper.Add("delivery_cust_country", deliveryCountry.ThreeLetterIsoCode);
+                    remotePostHelper.Add("delivery_cust_country", deliveryCountry.Name);
                 else
                     remotePostHelper.Add("delivery_cust_country", "");
             }
