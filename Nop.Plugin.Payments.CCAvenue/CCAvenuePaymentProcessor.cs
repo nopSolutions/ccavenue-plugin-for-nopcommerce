@@ -99,7 +99,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             remotePostHelperData.Add("billing_state", billingStateProvince != null ? billingStateProvince.Abbreviation : string.Empty);
             remotePostHelperData.Add("billing_zip", postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode);
             var billingCountry = postProcessPaymentRequest.Order.BillingAddress.Country;
-            remotePostHelperData.Add("billing_country", billingCountry != null ? billingCountry.ThreeLetterIsoCode : string.Empty);
+            remotePostHelperData.Add("billing_country", billingCountry != null ? billingCountry.Name : string.Empty);
 
             //Delivery details
 
@@ -115,7 +115,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 remotePostHelperData.Add("delivery_state", deliveryStateProvince != null ? deliveryStateProvince.Abbreviation : string.Empty);
                 remotePostHelperData.Add("delivery_zip", postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode);
                 var deliveryCountry = postProcessPaymentRequest.Order.ShippingAddress.Country;
-                remotePostHelperData.Add("delivery_country", deliveryCountry != null ? deliveryCountry.ThreeLetterIsoCode : string.Empty);
+                remotePostHelperData.Add("delivery_country", deliveryCountry != null ? deliveryCountry.Name : string.Empty);
             }
 
             remotePostHelperData.Add("Merchant_Param", _ccAvenuePaymentSettings.MerchantParam);
