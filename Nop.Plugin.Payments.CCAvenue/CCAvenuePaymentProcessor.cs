@@ -17,6 +17,8 @@ using Nop.Web.Framework;
 
 using CCA.Util;
 using System.Collections.Specialized;
+using System.Net;
+
 namespace Nop.Plugin.Payments.CCAvenue
 {
     /// <summary>
@@ -77,7 +79,10 @@ namespace Nop.Plugin.Payments.CCAvenue
             var myUtility = new CCAvenueHelper();
             var remotePostHelper = new RemotePost();
             var remotePostHelperData = new Dictionary<string, string>();
-            
+
+            //use TLS 1.2
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             remotePostHelper.FormName = "CCAvenueForm";
             remotePostHelper.Url = _ccAvenuePaymentSettings.PayUri;
             remotePostHelperData.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId.ToString());
