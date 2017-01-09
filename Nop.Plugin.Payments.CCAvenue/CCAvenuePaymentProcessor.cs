@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
 using System.Web.Routing;
 using CCA.Util;
 using Nop.Core;
@@ -73,6 +74,9 @@ namespace Nop.Plugin.Payments.CCAvenue
                 FormName = "CCAvenueForm",
                 Url = _ccAvenuePaymentSettings.PayUri
             };
+
+            //use TLS 1.2
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
             remotePostHelperData.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId);
             remotePostHelperData.Add("Amount", postProcessPaymentRequest.Order.OrderTotal.ToString(new CultureInfo("en-US", false).NumberFormat));
