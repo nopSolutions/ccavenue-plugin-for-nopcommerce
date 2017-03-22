@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Net;
 using System.Web.Routing;
 using CCA.Util;
 using Nop.Core;
@@ -32,13 +31,16 @@ namespace Nop.Plugin.Payments.CCAvenue
         private readonly CurrencySettings _currencySettings;
         private readonly IWebHelper _webHelper;
         private readonly CCACrypto _ccaCrypto;
+        private readonly ILocalizationService _localizationService;
+
         #endregion
 
         #region Ctor
 
         public CCAvenuePaymentProcessor(CCAvenuePaymentSettings ccAvenuePaymentSettings,
             ISettingService settingService, ICurrencyService currencyService,
-            CurrencySettings currencySettings, IWebHelper webHelper)
+            CurrencySettings currencySettings, IWebHelper webHelper,
+            ILocalizationService localizationService)
         {
             this._ccAvenuePaymentSettings = ccAvenuePaymentSettings;
             this._settingService = settingService;
@@ -46,6 +48,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             this._currencySettings = currencySettings;
             this._webHelper = webHelper;
             this._ccaCrypto = new CCACrypto();
+            this._localizationService = localizationService;
         }
 
         #endregion
@@ -74,17 +77,14 @@ namespace Nop.Plugin.Payments.CCAvenue
                 FormName = "CCAvenueForm",
                 Url = _ccAvenuePaymentSettings.PayUri
             };
-
-            //use TLS 1.2
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
+            
             remotePostHelperData.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId);
             remotePostHelperData.Add("Amount", postProcessPaymentRequest.Order.OrderTotal.ToString(new CultureInfo("en-US", false).NumberFormat));
             remotePostHelperData.Add("Currency", _currencyService.GetCurrencyById(_currencySettings.PrimaryStoreCurrencyId).CurrencyCode);
             remotePostHelperData.Add("Order_Id", postProcessPaymentRequest.Order.Id.ToString());
-            remotePostHelperData.Add("Redirect_Url", _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return");
+            remotePostHelperData.Add("Redirect_Url", _webHelper.GetStoreLocation() + "Plugins/PaymentCCAvenue/Return");
 
-            remotePostHelperData.Add("cancel_url", _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return");
+            remotePostHelperData.Add("cancel_url", _webHelper.GetStoreLocation() + "Plugins/PaymentCCAvenue/Return");
             remotePostHelperData.Add("language", "EN");
 
             //var myUtility = new CCAvenueHelper();
@@ -307,9 +307,9 @@ namespace Nop.Plugin.Payments.CCAvenue
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint", "Enter Pay URI.");
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee", "Additional fee");
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint", "Enter additional fee to charge your customers.");
-
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode", "Access Code");
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint", "Enter Access Code.");
+            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription", "For payment you will be redirected to the CCAvenue website.");
 
             base.Install();
         }
@@ -328,9 +328,9 @@ namespace Nop.Plugin.Payments.CCAvenue
             this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint");
             this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee");
             this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint");
-
             this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode");
             this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint");
+            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription");
             base.Uninstall();
         }
         #endregion
@@ -406,6 +406,14 @@ namespace Nop.Plugin.Payments.CCAvenue
         public bool SkipPaymentInfo
         {
             get { return false; }
+        }
+
+        /// <summary>
+        /// Gets a payment method description that will be displayed on checkout pages in the public store
+        /// </summary>
+        public string PaymentMethodDescription
+        {
+            get { return _localizationService.GetResource("Plugins.Payments.CCAvenue.PaymentMethodDescription"); }
         }
 
         #endregion

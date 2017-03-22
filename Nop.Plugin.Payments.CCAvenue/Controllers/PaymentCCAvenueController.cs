@@ -50,7 +50,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
                 AccessCode = _ccAvenuePaymentSettings.AccessCode
             };
 
-            return View("~/Plugins/Payments.CCAvenue/Views/PaymentCCAvenue/Configure.cshtml", model);
+            return View("~/Plugins/Payments.CCAvenue/Views/Configure.cshtml", model);
         }
 
         [HttpPost]
@@ -76,7 +76,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         [ChildActionOnly]
         public ActionResult PaymentInfo()
         {
-            return View("~/Plugins/Payments.CCAvenue/Views/PaymentCCAvenue/PaymentInfo.cshtml");
+            return View("~/Plugins/Payments.CCAvenue/Views/PaymentInfo.cshtml");
         }
 
         [NonAction]
