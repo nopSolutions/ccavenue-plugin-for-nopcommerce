@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Web.Routing;
 using CCA.Util;
+using Microsoft.AspNetCore.Http;
 using Nop.Core;
 using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
@@ -236,7 +236,7 @@ namespace Nop.Plugin.Payments.CCAvenue
         public bool CanRePostProcessPayment(Order order)
         {
             if (order == null)
-                throw new ArgumentNullException("order");
+                throw new ArgumentNullException(nameof(order));
 
             //CCAvenue is the redirection payment method
             //It also validates whether order is also paid (after redirection) so customers will not be able to pay twice
@@ -249,30 +249,26 @@ namespace Nop.Plugin.Payments.CCAvenue
             return !((DateTime.UtcNow - order.CreatedOnUtc).TotalMinutes < 1);
         }
 
-        /// <summary>
-        /// Gets a route for provider configuration
-        /// </summary>
-        /// <param name="actionName">Action name</param>
-        /// <param name="controllerName">Controller name</param>
-        /// <param name="routeValues">Route values</param>
-        public void GetConfigurationRoute(out string actionName, out string controllerName, out RouteValueDictionary routeValues)
+        public override string GetConfigurationPageUrl()
         {
-            actionName = "Configure";
-            controllerName = "PaymentCCAvenue";
-            routeValues = new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Payments.CCAvenue.Controllers" }, { "area", null } };
+            return $"{_webHelper.GetStoreLocation()}Admin/PaymentCCAvenue/Configure";
+        }
+        
+        public IList<string> ValidatePaymentForm(IFormCollection form)
+        {
+            var warnings = new List<string>();
+            return warnings;
+        }
+        
+        public ProcessPaymentRequest GetPaymentInfo(IFormCollection form)
+        {
+            var paymentInfo = new ProcessPaymentRequest();
+            return paymentInfo;
         }
 
-        /// <summary>
-        /// Gets a route for payment info
-        /// </summary>
-        /// <param name="actionName">Action name</param>
-        /// <param name="controllerName">Controller name</param>
-        /// <param name="routeValues">Route values</param>
-        public void GetPaymentInfoRoute(out string actionName, out string controllerName, out RouteValueDictionary routeValues)
+        public void GetPublicViewComponent(out string viewComponentName)
         {
-            actionName = "PaymentInfo";
-            controllerName = "PaymentCCAvenue";
-            routeValues = new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Payments.CCAvenue.Controllers" }, { "area", null } };
+            viewComponentName = "PaymentCCAvenue";
         }
 
         public Type GetControllerType()

@@ -1,15 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Web.Mvc;
 using CCA.Util;
+using Microsoft.AspNetCore.Mvc;
 using Nop.Core;
 using Nop.Core.Domain.Payments;
 using Nop.Plugin.Payments.CCAvenue.Models;
 using Nop.Services.Configuration;
 using Nop.Services.Orders;
 using Nop.Services.Payments;
+using Nop.Web.Framework;
 using Nop.Web.Framework.Controllers;
+using Nop.Web.Framework.Mvc.Filters;
+using System.Text;
+using Nop.Services.Security;
 
 namespace Nop.Plugin.Payments.CCAvenue.Controllers
 {
@@ -21,12 +24,14 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         private readonly IOrderProcessingService _orderProcessingService;
         private readonly CCAvenuePaymentSettings _ccAvenuePaymentSettings;
         private readonly PaymentSettings _paymentSettings;
+        private readonly IPermissionService _permissionService;
 
         public PaymentCCAvenueController(ISettingService settingService,
             IPaymentService paymentService, IOrderService orderService,
             IOrderProcessingService orderProcessingService,
             CCAvenuePaymentSettings ccAvenuePaymentSettings,
-            PaymentSettings paymentSettings)
+            PaymentSettings paymentSettings,
+            IPermissionService permissionService)
         {
             this._settingService = settingService;
             this._paymentService = paymentService;
@@ -34,12 +39,16 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             this._orderProcessingService = orderProcessingService;
             this._ccAvenuePaymentSettings = ccAvenuePaymentSettings;
             this._paymentSettings = paymentSettings;
+            this._permissionService = permissionService;
         }
 
-        [AdminAuthorize]
-        [ChildActionOnly]
-        public ActionResult Configure()
+        [AuthorizeAdmin]
+        [Area(AreaNames.Admin)]
+        public IActionResult Configure()
         {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
+                return AccessDeniedView();
+
             var model = new ConfigurationModel
             {
                 MerchantId = _ccAvenuePaymentSettings.MerchantId,
@@ -54,10 +63,13 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         }
 
         [HttpPost]
-        [AdminAuthorize]
-        [ChildActionOnly]
-        public ActionResult Configure(ConfigurationModel model)
+        [AuthorizeAdmin]
+        [Area(AreaNames.Admin)]
+        public IActionResult Configure(ConfigurationModel model)
         {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
+                return AccessDeniedView();
+
             if (!ModelState.IsValid)
                 return Configure();
 
@@ -72,29 +84,8 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
             return Configure();
         }
-
-        [ChildActionOnly]
-        public ActionResult PaymentInfo()
-        {
-            return View("~/Plugins/Payments.CCAvenue/Views/PaymentInfo.cshtml");
-        }
-
-        [NonAction]
-        public override IList<string> ValidatePaymentForm(FormCollection form)
-        {
-            var warnings = new List<string>();
-            return warnings;
-        }
-
-        [NonAction]
-        public override ProcessPaymentRequest GetPaymentInfo(FormCollection form)
-        {
-            var paymentInfo = new ProcessPaymentRequest();
-            return paymentInfo;
-        }
-
-        [ValidateInput(false)]
-        public ActionResult Return(FormCollection form)
+        
+        public ActionResult Return()
         {
             var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
             if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) || !processor.PluginDescriptor.Installed)
@@ -120,7 +111,8 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
             for (var i = 0; i < paramList.Count; i++)
             {
-                Response.Write(paramList.Keys[i] + " = " + paramList[i] + "<br>");
+                var data = Encoding.UTF8.GetBytes(paramList.Keys[i] + " = " + paramList[i] + "<br>");
+                Response.Body.Write(data, 0, data.Length);
             }
             
             var orderId = paramList["Order_Id"];
@@ -170,13 +162,11 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             return Content("Security Error. Illegal access detected");
         }
 
-        [ValidateInput(false)]
-        public ActionResult ReturnOLD(FormCollection form)
+        public ActionResult ReturnOLD()
         {
-            var processor =
-                _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
-            if (processor == null ||
-                !processor.IsPaymentMethodActive(_paymentSettings) || !processor.PluginDescriptor.Installed)
+            var form = Request.Form;
+            var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
+            if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) || !processor.PluginDescriptor.Installed)
                 throw new NopException("CCAvenue module cannot be loaded");
 
             var myUtility = new CCAvenueHelper();
@@ -194,7 +184,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             checksum = myUtility.VerifyCheckSum(merchantId, orderId, amount, authDesc, _ccAvenuePaymentSettings.Key,
                 checksum);
 
-            if ((checksum == "true") && (authDesc == "Y"))
+            if (checksum == "true" && authDesc == "Y")
             {
                 //here you need to put in the routines for a successful transaction such as sending an email to customer,
                 //setting database status, informing logistics etc etc
@@ -209,7 +199,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
                 return RedirectToRoute("CheckoutCompleted", new { orderId = order.Id });
             }
 
-            if ((checksum == "true") && (authDesc == "N"))
+            if (checksum == "true" && authDesc == "N")
             {
                 //here you need to put in the routines for a failed transaction such as sending an email to customer
                 //setting database status etc etc
@@ -217,7 +207,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
                 return Content("Thank you for shopping with us. However, the transaction has been declined");
             }
 
-            if ((checksum == "true") && (authDesc == "B"))
+            if (checksum == "true" && authDesc == "B")
             {
                 //here you need to put in the routines/e-mail for a  "Batch Processing" order.
                 //This is only if payment for this transaction has been made by an American Express Card

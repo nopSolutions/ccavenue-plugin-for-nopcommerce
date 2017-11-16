@@ -1,73 +1,72 @@
 ﻿@{
-    Layout = "";
+    Layout = "_ConfigurePlugin";
 }
+
 @model ConfigurationModel
 @using Nop.Plugin.Payments.CCAvenue.Models;
-@using Nop.Web.Framework;
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
+
+<form asp-controller="PaymentCCAvenue" asp-action="Configure" method="post">
     <div class="panel-group">
         <div class="panel panel-default">
             <div class="panel-body">
 
                 <div class="form-group">
                     <div class="col-md-3">
-                        @Html.NopLabelFor(model => model.MerchantId)
+                        <nop-label asp-for="MerchantId" />
                     </div>
                     <div class="col-md-9">
-                        @Html.NopEditorFor(model => model.MerchantId)
-                        @Html.ValidationMessageFor(model => model.MerchantId)
+                        <nop-editor asp-for="MerchantId" />
+                        <span asp-validation-for="MerchantId"></span>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <div class="col-md-3">
-                        @Html.NopLabelFor(model => model.Key)
+                        <nop-label asp-for="Key" />
                     </div>
                     <div class="col-md-9">
-                        @Html.NopEditorFor(model => model.Key)
-                        @Html.ValidationMessageFor(model => model.Key)
+                        <nop-editor asp-for="Key" />
+                        <span asp-validation-for="Key"></span>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <div class="col-md-3">
-                        @Html.NopLabelFor(model => model.AccessCode)
+                        <nop-label asp-for="AccessCode" />
                     </div>
                     <div class="col-md-9">
-                        @Html.NopEditorFor(model => model.AccessCode)
-                        @Html.ValidationMessageFor(model => model.AccessCode)
+                        <nop-editor asp-for="AccessCode" />
+                        <span asp-validation-for="AccessCode"></span>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <div class="col-md-3">
-                        @Html.NopLabelFor(model => model.PayUri)
+                        <nop-label asp-for="PayUri" />
                     </div>
                     <div class="col-md-9">
-                        @Html.NopEditorFor(model => model.PayUri)
-                        @Html.ValidationMessageFor(model => model.PayUri)
+                        <nop-editor asp-for="PayUri" />
+                        <span asp-validation-for="PayUri"></span>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <div class="col-md-3">
-                        @Html.NopLabelFor(model => model.MerchantParam)
+                        <nop-label asp-for="MerchantParam" />
                     </div>
                     <div class="col-md-9">
-                        @Html.NopEditorFor(model => model.MerchantParam)
-                        @Html.ValidationMessageFor(model => model.MerchantParam)
+                        <nop-editor asp-for="MerchantParam" />
+                        <span asp-validation-for="MerchantParam"></span>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <div class="col-md-3">
-                        @Html.NopLabelFor(model => model.AdditionalFee)
+                        <nop-label asp-for="AdditionalFee" />
                     </div>
                     <div class="col-md-9">
-                        @Html.NopEditorFor(model => model.AdditionalFee)
-                        @Html.ValidationMessageFor(model => model.AdditionalFee)
+                        <nop-editor asp-for="AdditionalFee" />
+                        <span asp-validation-for="AdditionalFee"></span>
                     </div>
                 </div>
 
@@ -83,4 +82,4 @@
             </div>
         </div>
     </div>
-}
+</form>
