@@ -12,6 +12,7 @@ using Nop.Web.Framework;
 using Nop.Web.Framework.Controllers;
 using Nop.Web.Framework.Mvc.Filters;
 using System.Text;
+using Nop.Core.Domain.Orders;
 using Nop.Services.Security;
 
 namespace Nop.Plugin.Payments.CCAvenue.Controllers
@@ -84,11 +85,13 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
             return Configure();
         }
-        
+
         public ActionResult Return()
         {
-            var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
-            if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) || !processor.PluginDescriptor.Installed)
+            var processor =
+                _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
+            if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) ||
+                !processor.PluginDescriptor.Installed)
                 throw new NopException("CCAvenue module cannot be loaded");
 
             //assign following values to send it to verifychecksum function.
@@ -105,119 +108,52 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
                 var parts = seg.Split('=');
 
                 if (parts.Length <= 0) continue;
-                
+
                 paramList.Add(parts[0].Trim(), parts[1].Trim());
             }
 
+            var sb = new StringBuilder();
+            sb.AppendLine("CCAvenue:");
             for (var i = 0; i < paramList.Count; i++)
             {
-                var data = Encoding.UTF8.GetBytes(paramList.Keys[i] + " = " + paramList[i] + "<br>");
-                Response.Body.Write(data, 0, data.Length);
+                sb.AppendLine(paramList.Keys[i] + " = " + paramList[i]);
             }
-            
+
             var orderId = paramList["Order_Id"];
             var authDesc = paramList["order_status"];
+
+            var order = _orderService.GetOrderById(Convert.ToInt32(orderId));
+
+            if (order == null)
+                return RedirectToAction("Index", "Home", new {area = string.Empty});
+
+            order.OrderNotes.Add(new OrderNote
+            {
+                Note = sb.ToString(),
+                DisplayToCustomer = false,
+                CreatedOnUtc = DateTime.UtcNow
+            });
 
             //var merchantId = Params["Merchant_Id"];
             //var Amount = Params["Amount"];
             //var myUtility = new CCAvenueHelper();
             //var checksum = myUtility.verifychecksum(merchantId, orderId, Amount, AuthDesc, _ccAvenuePaymentSettings.Key, checksum);
 
-            switch (authDesc)
+            if (!authDesc.Equals("Success", StringComparison.InvariantCultureIgnoreCase))
             {
-                case "Success":
-                    //here you need to put in the routines for a successful transaction such as sending an email to customer,
-                    //setting database status, informing logistics etc etc
-                    var order = _orderService.GetOrderById(Convert.ToInt32(orderId));
-                    if (_orderProcessingService.CanMarkOrderAsPaid(order))
-                    {
-                        _orderProcessingService.MarkOrderAsPaid(order);
-                    }
-
-                    //thank you for shopping with us. Your credit card has been charged and your transaction is successful
-                    return RedirectToRoute("CheckoutCompleted", new { orderId = order.Id });
-                case "Failure":
-                    //here you need to put in the routines for a failed transaction such as sending an email to customer
-                    //setting database status etc etc
-                    return Content("Thank you for shopping with us. However, the transaction has been declined");
+                return RedirectToRoute("OrderDetails", new {orderId = order.Id});
             }
 
-            //Commented this block as their is no Batch Processing in New CCAvenue API
+            //here you need to put in the routines for a successful transaction such as sending an email to customer,
+            //setting database status, informing logistics etc etc
 
-            //if ((checksum == "true") && (AuthDesc == "B"))
-            //{
-            //    //here you need to put in the routines/e-mail for a  "Batch Processing" order.
-            //    //This is only if payment for this transaction has been made by an American Express Card
-            //    //since American Express authorisation status is available only after 5-6 hours by mail from ccavenue and at the "View Pending Orders"
-            
-            //    return Content("Thank you for shopping with us. We will keep you posted regarding the status of your order through e-mail");
-            //}
-            //else
-            //{
-            //    //here you need to simply ignore this and dont need to perform any operation in this condition
-
-            //    return Content("Security Error. Illegal access detected");
-            //}
-
-            return Content("Security Error. Illegal access detected");
-        }
-
-        public ActionResult ReturnOLD()
-        {
-            var form = Request.Form;
-            var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
-            if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) || !processor.PluginDescriptor.Installed)
-                throw new NopException("CCAvenue module cannot be loaded");
-
-            var myUtility = new CCAvenueHelper();
-
-            //assign following values to send it to verifychecksum function.
-            if (string.IsNullOrWhiteSpace(_ccAvenuePaymentSettings.Key))
-                throw new NopException("CCAvenue key is not set");
-
-            var merchantId = form["Merchant_Id"];
-            var orderId = form["Order_Id"];
-            var amount = form["Amount"];
-            var authDesc = form["AuthDesc"];
-            var checksum = form["Checksum"];
-
-            checksum = myUtility.VerifyCheckSum(merchantId, orderId, amount, authDesc, _ccAvenuePaymentSettings.Key,
-                checksum);
-
-            if (checksum == "true" && authDesc == "Y")
+            if (_orderProcessingService.CanMarkOrderAsPaid(order))
             {
-                //here you need to put in the routines for a successful transaction such as sending an email to customer,
-                //setting database status, informing logistics etc etc
-
-                var order = _orderService.GetOrderById(Convert.ToInt32(orderId));
-                if (_orderProcessingService.CanMarkOrderAsPaid(order))
-                {
-                    _orderProcessingService.MarkOrderAsPaid(order);
-                }
-
-                //thank you for shopping with us. Your credit card has been charged and your transaction is successful
-                return RedirectToRoute("CheckoutCompleted", new { orderId = order.Id });
+                _orderProcessingService.MarkOrderAsPaid(order);
             }
 
-            if (checksum == "true" && authDesc == "N")
-            {
-                //here you need to put in the routines for a failed transaction such as sending an email to customer
-                //setting database status etc etc
-
-                return Content("Thank you for shopping with us. However, the transaction has been declined");
-            }
-
-            if (checksum == "true" && authDesc == "B")
-            {
-                //here you need to put in the routines/e-mail for a  "Batch Processing" order.
-                //This is only if payment for this transaction has been made by an American Express Card
-                //since American Express authorisation status is available only after 5-6 hours by mail from ccavenue and at the "View Pending Orders"
-
-                return Content("Thank you for shopping with us. We will keep you posted regarding the status of your order through e-mail");
-            }
-
-            //here you need to simply ignore this and dont need to perform any operation in this condition
-            return Content("Security Error. Illegal access detected");
+            //thank you for shopping with us. Your credit card has been charged and your transaction is successful
+            return RedirectToRoute("CheckoutCompleted", new { orderId = order.Id });
         }
     }
 }

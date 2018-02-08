@@ -107,19 +107,18 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             //Delivery details
             var shippingAddress = postProcessPaymentRequest.Order.ShippingAddress;
-            if (postProcessPaymentRequest.Order.ShippingStatus != ShippingStatus.ShippingNotRequired && shippingAddress != null)
+            
+            if (postProcessPaymentRequest.Order.ShippingStatus != ShippingStatus.ShippingNotRequired)
             {
-                remotePostHelperData.Add("delivery_name", shippingAddress.FirstName ?? string.Empty);
+                remotePostHelperData.Add("delivery_name", shippingAddress?.FirstName ?? string.Empty);
                 //remotePostHelperData.Add("delivery_address", shippingAddress.Address1 + " " + shippingAddress.Address2);
-                remotePostHelperData.Add("delivery_address", shippingAddress.Address1 ?? string.Empty);
+                remotePostHelperData.Add("delivery_address", shippingAddress?.Address1 ?? string.Empty);
                 //   remotePostHelper.Add("delivery_cust_notes", string.Empty);
-                remotePostHelperData.Add("delivery_tel", shippingAddress.PhoneNumber ?? string.Empty);
-                remotePostHelperData.Add("delivery_city", shippingAddress.City ?? string.Empty);
-                var deliveryStateProvince = shippingAddress.StateProvince;
-                remotePostHelperData.Add("delivery_state", deliveryStateProvince != null ? deliveryStateProvince.Abbreviation : string.Empty);
-                remotePostHelperData.Add("delivery_zip", shippingAddress.ZipPostalCode ?? string.Empty);
-                var deliveryCountry = shippingAddress.Country;
-                remotePostHelperData.Add("delivery_country", deliveryCountry != null ? deliveryCountry.Name : string.Empty);
+                remotePostHelperData.Add("delivery_tel", shippingAddress?.PhoneNumber ?? string.Empty);
+                remotePostHelperData.Add("delivery_city", shippingAddress?.City ?? string.Empty);
+                remotePostHelperData.Add("delivery_state", shippingAddress?.StateProvince?.Abbreviation ?? string.Empty);
+                remotePostHelperData.Add("delivery_zip", shippingAddress?.ZipPostalCode ?? string.Empty);
+                remotePostHelperData.Add("delivery_country", shippingAddress?.Country?.Name ?? string.Empty);
             }
 
             remotePostHelperData.Add("Merchant_Param", _ccAvenuePaymentSettings.MerchantParam);
