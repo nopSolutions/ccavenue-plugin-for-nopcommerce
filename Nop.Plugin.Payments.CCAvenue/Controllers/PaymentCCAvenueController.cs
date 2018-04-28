@@ -86,7 +86,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             return Configure();
         }
 
-        public ActionResult Return()
+        public ActionResult Return(IpnModel model)
         {
             var processor =
                 _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
@@ -100,7 +100,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
             var workingKey = _ccAvenuePaymentSettings.Key;
             var ccaCrypto = new CCACrypto();
-            var encResponse = ccaCrypto.Decrypt(Request.Form["encResp"], workingKey);
+            var encResponse = ccaCrypto.Decrypt(model.Form["encResp"], workingKey);
             var paramList = new NameValueCollection();
             var segments = encResponse.Split('&');
             foreach (var seg in segments)
