@@ -9,7 +9,6 @@ using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
 using Nop.Core.Plugins;
-using Nop.Plugin.Payments.CCAvenue.Controllers;
 using Nop.Services.Configuration;
 using Nop.Services.Directory;
 using Nop.Services.Localization;
@@ -26,12 +25,12 @@ namespace Nop.Plugin.Payments.CCAvenue
         #region Fields
 
         private readonly CCAvenuePaymentSettings _ccAvenuePaymentSettings;
-        private readonly ISettingService _settingService;
-        private readonly ICurrencyService _currencyService;
-        private readonly CurrencySettings _currencySettings;
-        private readonly IWebHelper _webHelper;
         private readonly CCACrypto _ccaCrypto;
+        private readonly CurrencySettings _currencySettings;
+        private readonly ICurrencyService _currencyService;
         private readonly ILocalizationService _localizationService;
+        private readonly ISettingService _settingService;
+        private readonly IWebHelper _webHelper;
 
         #endregion
 
@@ -265,14 +264,9 @@ namespace Nop.Plugin.Payments.CCAvenue
             return paymentInfo;
         }
 
-        public void GetPublicViewComponent(out string viewComponentName)
+        public string GetPublicViewComponentName()
         {
-            viewComponentName = "PaymentCCAvenue";
-        }
-
-        public Type GetControllerType()
-        {
-            return typeof(PaymentCCAvenueController);
+            return "PaymentCCAvenue";
         }
 
         public override void Install()
@@ -291,41 +285,43 @@ namespace Nop.Plugin.Payments.CCAvenue
             _settingService.SaveSetting(settings);
 
             //locales
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.RedirectionTip", "You will be redirected to CCAvenue site to complete the order.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId", "Merchant ID");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId.Hint", "Enter merchant ID.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.Key", "Working Key");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.Key.Hint", "Enter working key.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam", "Merchant Param");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam.Hint", "Enter merchant param.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri", "Pay URI");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint", "Enter Pay URI.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee", "Additional fee");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint", "Enter additional fee to charge your customers.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode", "Access Code");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint", "Enter Access Code.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription", "For payment you will be redirected to the CCAvenue website.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.RedirectionTip", "You will be redirected to CCAvenue site to complete the order.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId", "Merchant ID");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId.Hint", "Enter merchant ID.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.Key", "Working Key");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.Key.Hint", "Enter working key.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam", "Merchant Param");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam.Hint", "Enter merchant param.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri", "Pay URI");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint", "Enter Pay URI.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee", "Additional fee");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint", "Enter additional fee to charge your customers.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode", "Access Code");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint", "Enter Access Code.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription", "For payment you will be redirected to the CCAvenue website.");
 
             base.Install();
         }
 
         public override void Uninstall()
         {
+            _settingService.DeleteSetting<CCAvenuePaymentSettings>();
+
             //locales
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.RedirectionTip");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.Key");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.Key.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.RedirectionTip");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.Key");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.Key.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription");
             base.Uninstall();
         }
         #endregion

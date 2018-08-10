@@ -1,46 +1,43 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Text;
 using CCA.Util;
 using Microsoft.AspNetCore.Mvc;
 using Nop.Core;
-using Nop.Core.Domain.Payments;
+using Nop.Core.Domain.Orders;
 using Nop.Plugin.Payments.CCAvenue.Models;
 using Nop.Services.Configuration;
 using Nop.Services.Orders;
 using Nop.Services.Payments;
+using Nop.Services.Security;
 using Nop.Web.Framework;
 using Nop.Web.Framework.Controllers;
 using Nop.Web.Framework.Mvc.Filters;
-using System.Text;
-using Nop.Core.Domain.Orders;
-using Nop.Services.Security;
 
 namespace Nop.Plugin.Payments.CCAvenue.Controllers
 {
     public class PaymentCCAvenueController : BasePaymentController
     {
-        private readonly ISettingService _settingService;
-        private readonly IPaymentService _paymentService;
+        private readonly CCAvenuePaymentSettings _ccAvenuePaymentSettings;
         private readonly IOrderService _orderService;
         private readonly IOrderProcessingService _orderProcessingService;
-        private readonly CCAvenuePaymentSettings _ccAvenuePaymentSettings;
-        private readonly PaymentSettings _paymentSettings;
+        private readonly IPaymentService _paymentService;
         private readonly IPermissionService _permissionService;
+        private readonly ISettingService _settingService;
 
-        public PaymentCCAvenueController(ISettingService settingService,
-            IPaymentService paymentService, IOrderService orderService,
+        public PaymentCCAvenueController(CCAvenuePaymentSettings ccAvenuePaymentSettings,
+            IOrderService orderService,
             IOrderProcessingService orderProcessingService,
-            CCAvenuePaymentSettings ccAvenuePaymentSettings,
-            PaymentSettings paymentSettings,
-            IPermissionService permissionService)
+            IPaymentService paymentService,
+            IPermissionService permissionService,
+            ISettingService settingService)
         {
-            this._settingService = settingService;
-            this._paymentService = paymentService;
+            this._ccAvenuePaymentSettings = ccAvenuePaymentSettings;
             this._orderService = orderService;
             this._orderProcessingService = orderProcessingService;
-            this._ccAvenuePaymentSettings = ccAvenuePaymentSettings;
-            this._paymentSettings = paymentSettings;
+            this._paymentService = paymentService;
             this._permissionService = permissionService;
+            this._settingService = settingService;
         }
 
         [AuthorizeAdmin]
@@ -90,7 +87,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         {
             var processor =
                 _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
-            if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) ||
+            if (processor == null || !_paymentService.IsPaymentMethodActive(processor) ||
                 !processor.PluginDescriptor.Installed)
                 throw new NopException("CCAvenue module cannot be loaded");
 

@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <Copyright>Copyright © Nop Solutions, Ltd</Copyright> 
     <Company>Nop Solutions, Ltd</Company> 
     <Authors>Nop Solutions, Ltd</Authors> 
-    <Version>1.20</Version> 
-    <Description>This plugin allows paying with CCAvenue</Description> 
     <PackageLicenseUrl></PackageLicenseUrl> 
     <PackageProjectUrl>http://www.nopcommerce.com/p/962/ccavenue-payment-module.aspx</PackageProjectUrl> 
     <RepositoryUrl>https://github.com/nopSolutions/ccavenue-plugin-for-nopcommerce</RepositoryUrl> 
