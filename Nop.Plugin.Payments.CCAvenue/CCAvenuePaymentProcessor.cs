@@ -8,11 +8,11 @@ using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
+using Nop.Core.Plugins;
 using Nop.Services.Configuration;
 using Nop.Services.Directory;
 using Nop.Services.Localization;
 using Nop.Services.Payments;
-using Nop.Services.Plugins;
 using Nop.Web.Framework;
 
 namespace Nop.Plugin.Payments.CCAvenue
