@@ -21,21 +21,21 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         private readonly CCAvenuePaymentSettings _ccAvenuePaymentSettings;
         private readonly IOrderService _orderService;
         private readonly IOrderProcessingService _orderProcessingService;
-        private readonly IPaymentService _paymentService;
+        private readonly IPaymentPluginManager _paymentPluginManager;
         private readonly IPermissionService _permissionService;
         private readonly ISettingService _settingService;
 
         public PaymentCCAvenueController(CCAvenuePaymentSettings ccAvenuePaymentSettings,
             IOrderService orderService,
             IOrderProcessingService orderProcessingService,
-            IPaymentService paymentService,
+            IPaymentPluginManager paymentService,
             IPermissionService permissionService,
             ISettingService settingService)
         {
             this._ccAvenuePaymentSettings = ccAvenuePaymentSettings;
             this._orderService = orderService;
             this._orderProcessingService = orderProcessingService;
-            this._paymentService = paymentService;
+            this._paymentPluginManager = paymentService;
             this._permissionService = permissionService;
             this._settingService = settingService;
         }
@@ -86,8 +86,8 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         public ActionResult Return(IpnModel model)
         {
             var processor =
-                _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
-            if (processor == null || !_paymentService.IsPaymentMethodActive(processor) ||
+                _paymentPluginManager.LoadPluginBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
+            if (processor == null || !_paymentPluginManager.IsPluginActive(processor) ||
                 !processor.PluginDescriptor.Installed)
                 throw new NopException("CCAvenue module cannot be loaded");
 
