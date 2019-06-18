@@ -9,17 +9,10 @@ namespace Nop.Plugin.Payments.CCAvenue
         public void RegisterRoutes(IRouteBuilder routeBuilder)
         {
             //Return
-            routeBuilder.MapRoute("Plugin.Payments.CCAvenue.Return",
-                 "Plugins/PaymentCCAvenue/Return",
+            routeBuilder.MapRoute("Plugin.Payments.CCAvenue.Return", "Plugins/PaymentCCAvenue/Return",
                  new { controller = "PaymentCCAvenue", action = "Return" });
         }
 
-        public int Priority
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public int Priority => 0;
     }
 }

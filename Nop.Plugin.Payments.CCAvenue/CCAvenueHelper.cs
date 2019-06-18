@@ -1,9 +1,11 @@
-using System;
+﻿using System;
 
 namespace Nop.Plugin.Payments.CCAvenue
 {
     public class CCAvenueHelper
     {
+        private const long BASE = 65521;
+
         public string GetCheckSum(string merchantId, string orderId, string amount, string redirectUrl, string workingKey)
         {
             var str = merchantId + "|" + orderId + "|" + amount + "|" + redirectUrl + "|" + workingKey;
@@ -20,10 +22,9 @@ namespace Nop.Plugin.Payments.CCAvenue
             var retval = string.Compare(adlerResult, checksum, StringComparison.OrdinalIgnoreCase) == 0 ? "true" : "false";
             return retval;
         }
-        
+
         private string Adler32(long adler, string strPattern)
         {
-            const long BASE = 65521;
             var s1 = Andop(adler, 65535);
             var s2 = Andop(Cdec(RightShift(Cbin(adler), 16)), 65535);
 
@@ -36,7 +37,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             }
             return (Cdec(LeftShift(Cbin(s2), 16)) + s1).ToString();
         }
-        
+
         private long Andop(long op1, long op2)
         {
             var op = "";
@@ -68,7 +69,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             }
             return bin;
         }
-        
+
         private string LeftShift(string str, long num)
         {
             long tempCount = 32 - str.Length;
@@ -80,12 +81,12 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             for (var i = 1; i <= num; i++)
             {
-                str = str + "0";
+                str += "0";
                 str = str.Substring(1, str.Length - 1);
             }
             return str;
         }
-        
+
         private string RightShift(string str, long num)
         {
             for (var i = 1; i <= num; i++)
@@ -101,10 +102,10 @@ namespace Nop.Plugin.Payments.CCAvenue
             long dec = 0;
             for (var n = 0; n < strNum.Length; n++)
             {
-                dec = dec + (long.Parse(strNum.Substring(n, 1)) * (long)Math.Pow(2, strNum.Length - (n + 1)));
+                dec += (long.Parse(strNum.Substring(n, 1)) * (long)Math.Pow(2, strNum.Length - (n + 1)));
             }
             return dec;
         }
 
-    }	
+    }
 }

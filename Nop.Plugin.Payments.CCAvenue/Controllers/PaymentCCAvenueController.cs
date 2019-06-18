@@ -21,23 +21,23 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         private readonly CCAvenuePaymentSettings _ccAvenuePaymentSettings;
         private readonly IOrderService _orderService;
         private readonly IOrderProcessingService _orderProcessingService;
-        private readonly IPaymentService _paymentService;
+        private readonly IPaymentPluginManager _paymentPluginManager;
         private readonly IPermissionService _permissionService;
         private readonly ISettingService _settingService;
 
         public PaymentCCAvenueController(CCAvenuePaymentSettings ccAvenuePaymentSettings,
             IOrderService orderService,
             IOrderProcessingService orderProcessingService,
-            IPaymentService paymentService,
+            IPaymentPluginManager paymentPluginManager,
             IPermissionService permissionService,
             ISettingService settingService)
         {
-            this._ccAvenuePaymentSettings = ccAvenuePaymentSettings;
-            this._orderService = orderService;
-            this._orderProcessingService = orderProcessingService;
-            this._paymentService = paymentService;
-            this._permissionService = permissionService;
-            this._settingService = settingService;
+            _ccAvenuePaymentSettings = ccAvenuePaymentSettings;
+            _orderService = orderService;
+            _orderProcessingService = orderProcessingService;
+            _paymentPluginManager = paymentPluginManager;
+            _permissionService = permissionService;
+            _settingService = settingService;
         }
 
         [AuthorizeAdmin]
@@ -83,11 +83,10 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             return Configure();
         }
 
-        public ActionResult Return(IpnModel model)
+        public ActionResult Return()
         {
-            var processor =
-                _paymentService.LoadPaymentMethodBySystemName("Payments.CCAvenue") as CCAvenuePaymentProcessor;
-            if (processor == null || !_paymentService.IsPaymentMethodActive(processor) ||
+            if (!(_paymentPluginManager.LoadPluginBySystemName("Payments.CCAvenue") is CCAvenuePaymentProcessor processor) ||
+                !_paymentPluginManager.IsPluginActive(processor) ||
                 !processor.PluginDescriptor.Installed)
                 throw new NopException("CCAvenue module cannot be loaded");
 
@@ -97,14 +96,14 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
             var workingKey = _ccAvenuePaymentSettings.Key;
             var ccaCrypto = new CCACrypto();
-            var encResponse = ccaCrypto.Decrypt(model.Form["encResp"], workingKey);
+            var encResponse = ccaCrypto.Decrypt(Request.Form["encResp"], workingKey);
             var paramList = new NameValueCollection();
-            var segments = encResponse.Split('&');
-            foreach (var seg in segments)
+            foreach (var seg in encResponse.Split('&'))
             {
                 var parts = seg.Split('=');
 
-                if (parts.Length <= 0) continue;
+                if (parts.Length <= 0)
+                    continue;
 
                 paramList.Add(parts[0].Trim(), parts[1].Trim());
             }
@@ -122,7 +121,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             var order = _orderService.GetOrderById(Convert.ToInt32(orderId));
 
             if (order == null)
-                return RedirectToAction("Index", "Home", new {area = string.Empty});
+                return RedirectToAction("Index", "Home", new { area = string.Empty });
 
             order.OrderNotes.Add(new OrderNote
             {
@@ -138,7 +137,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
             if (!authDesc.Equals("Success", StringComparison.InvariantCultureIgnoreCase))
             {
-                return RedirectToRoute("OrderDetails", new {orderId = order.Id});
+                return RedirectToRoute("OrderDetails", new { orderId = order.Id });
             }
 
             //here you need to put in the routines for a successful transaction such as sending an email to customer,

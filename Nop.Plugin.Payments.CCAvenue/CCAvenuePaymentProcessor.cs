@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using CCA.Util;
@@ -8,11 +8,11 @@ using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
-using Nop.Core.Plugins;
 using Nop.Services.Configuration;
 using Nop.Services.Directory;
 using Nop.Services.Localization;
 using Nop.Services.Payments;
+using Nop.Services.Plugins;
 using Nop.Web.Framework;
 
 namespace Nop.Plugin.Payments.CCAvenue
@@ -41,13 +41,13 @@ namespace Nop.Plugin.Payments.CCAvenue
             CurrencySettings currencySettings, IWebHelper webHelper,
             ILocalizationService localizationService)
         {
-            this._ccAvenuePaymentSettings = ccAvenuePaymentSettings;
-            this._settingService = settingService;
-            this._currencyService = currencyService;
-            this._currencySettings = currencySettings;
-            this._webHelper = webHelper;
-            this._ccaCrypto = new CCACrypto();
-            this._localizationService = localizationService;
+            _ccAvenuePaymentSettings = ccAvenuePaymentSettings;
+            _settingService = settingService;
+            _currencyService = currencyService;
+            _currencySettings = currencySettings;
+            _webHelper = webHelper;
+            _ccaCrypto = new CCACrypto();
+            _localizationService = localizationService;
         }
 
         #endregion
@@ -76,7 +76,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 FormName = "CCAvenueForm",
                 Url = _ccAvenuePaymentSettings.PayUri
             };
-            
+
             remotePostHelperData.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId);
             remotePostHelperData.Add("Amount", postProcessPaymentRequest.Order.OrderTotal.ToString(new CultureInfo("en-US", false).NumberFormat));
             remotePostHelperData.Add("Currency", _currencyService.GetCurrencyById(_currencySettings.PrimaryStoreCurrencyId).CurrencyCode);
@@ -88,11 +88,11 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             //var myUtility = new CCAvenueHelper();
             //remotePostHelperData.Add("Checksum", myUtility.getchecksum(_ccAvenuePaymentSettings.MerchantId.ToString(), postProcessPaymentRequest.Order.Id.ToString(), postProcessPaymentRequest.Order.OrderTotal.ToString(), _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return", _ccAvenuePaymentSettings.Key));
-            
+
             //Billing details
-            remotePostHelperData.Add("billing_name", postProcessPaymentRequest.Order.BillingAddress.FirstName );
+            remotePostHelperData.Add("billing_name", postProcessPaymentRequest.Order.BillingAddress.FirstName);
             //remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1 + " " + postProcessPaymentRequest.Order.BillingAddress.Address2);
-           
+
             remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1);
             remotePostHelperData.Add("billing_tel", postProcessPaymentRequest.Order.BillingAddress.PhoneNumber);
             remotePostHelperData.Add("billing_email", postProcessPaymentRequest.Order.BillingAddress.Email);
@@ -106,7 +106,7 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             //Delivery details
             var shippingAddress = postProcessPaymentRequest.Order.ShippingAddress;
-            
+
             if (postProcessPaymentRequest.Order.ShippingStatus != ShippingStatus.ShippingNotRequired)
             {
                 remotePostHelperData.Add("delivery_name", shippingAddress?.FirstName ?? string.Empty);
@@ -134,7 +134,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 var strEncPOSTData = _ccaCrypto.Encrypt(strPOSTData, _ccAvenuePaymentSettings.Key);
                 remotePostHelper.Add("encRequest", strEncPOSTData);
                 remotePostHelper.Add("access_code", _ccAvenuePaymentSettings.AccessCode);
-                
+
                 remotePostHelper.Post();
             }
             catch (Exception ep)
@@ -251,13 +251,13 @@ namespace Nop.Plugin.Payments.CCAvenue
         {
             return $"{_webHelper.GetStoreLocation()}Admin/PaymentCCAvenue/Configure";
         }
-        
+
         public IList<string> ValidatePaymentForm(IFormCollection form)
         {
             var warnings = new List<string>();
             return warnings;
         }
-        
+
         public ProcessPaymentRequest GetPaymentInfo(IFormCollection form)
         {
             var paymentInfo = new ProcessPaymentRequest();
@@ -266,7 +266,7 @@ namespace Nop.Plugin.Payments.CCAvenue
 
         public string GetPublicViewComponentName()
         {
-            return "PaymentCCAvenue";
+            return CCAvenueDefaults.VIEW_COMPONENT_NAME;
         }
 
         public override void Install()
@@ -279,7 +279,7 @@ namespace Nop.Plugin.Payments.CCAvenue
                 MerchantParam = "",
 
                 //PayUri = "https://www.ccavenue.com/shopzone/cc_details.jsp",
-                PayUri = "https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction",
+                PayUri = CCAvenueDefaults.PayUri,
                 AdditionalFee = 0,
             };
             _settingService.SaveSetting(settings);
@@ -331,81 +331,39 @@ namespace Nop.Plugin.Payments.CCAvenue
         /// <summary>
         /// Gets a value indicating whether capture is supported
         /// </summary>
-        public bool SupportCapture
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool SupportCapture => false;
 
         /// <summary>
         /// Gets a value indicating whether partial refund is supported
         /// </summary>
-        public bool SupportPartiallyRefund
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool SupportPartiallyRefund => false;
 
         /// <summary>
         /// Gets a value indicating whether refund is supported
         /// </summary>
-        public bool SupportRefund
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool SupportRefund => false;
 
         /// <summary>
         /// Gets a value indicating whether void is supported
         /// </summary>
-        public bool SupportVoid
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool SupportVoid => false;
 
         /// <summary>
         /// Gets a recurring payment type of payment method
         /// </summary>
-        public RecurringPaymentType RecurringPaymentType
-        {
-            get
-            {
-                return RecurringPaymentType.NotSupported;
-            }
-        }
+        public RecurringPaymentType RecurringPaymentType => RecurringPaymentType.NotSupported;
 
         /// <summary>
         /// Gets a payment method type
         /// </summary>
-        public PaymentMethodType PaymentMethodType
-        {
-            get
-            {
-                return PaymentMethodType.Redirection;
-            }
-        }
+        public PaymentMethodType PaymentMethodType => PaymentMethodType.Redirection;
 
-        public bool SkipPaymentInfo
-        {
-            get { return false; }
-        }
+        public bool SkipPaymentInfo => false;
 
         /// <summary>
         /// Gets a payment method description that will be displayed on checkout pages in the public store
         /// </summary>
-        public string PaymentMethodDescription
-        {
-            get { return _localizationService.GetResource("Plugins.Payments.CCAvenue.PaymentMethodDescription"); }
-        }
+        public string PaymentMethodDescription => _localizationService.GetResource("Plugins.Payments.CCAvenue.PaymentMethodDescription");
 
         #endregion
     }
