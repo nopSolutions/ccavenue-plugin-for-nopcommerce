@@ -8,6 +8,7 @@ using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
+using Nop.Services.Common;
 using Nop.Services.Configuration;
 using Nop.Services.Directory;
 using Nop.Services.Localization;
@@ -27,27 +28,39 @@ namespace Nop.Plugin.Payments.CCAvenue
         private readonly CCAvenuePaymentSettings _ccAvenuePaymentSettings;
         private readonly CCACrypto _ccaCrypto;
         private readonly CurrencySettings _currencySettings;
+        private readonly IAddressService _addressService;
+        private readonly ICountryService _countryService;
         private readonly ICurrencyService _currencyService;
         private readonly ILocalizationService _localizationService;
         private readonly ISettingService _settingService;
+        private readonly IStateProvinceService _stateProvinceService;
         private readonly IWebHelper _webHelper;
 
         #endregion
 
         #region Ctor
 
-        public CCAvenuePaymentProcessor(CCAvenuePaymentSettings ccAvenuePaymentSettings,
-            ISettingService settingService, ICurrencyService currencyService,
-            CurrencySettings currencySettings, IWebHelper webHelper,
-            ILocalizationService localizationService)
+        public CCAvenuePaymentProcessor(
+            CCAvenuePaymentSettings ccAvenuePaymentSettings,
+            CurrencySettings currencySettings,
+            ICurrencyService currencyService,
+            IAddressService addressService,
+            ICountryService countryService,                        
+            ILocalizationService localizationService,
+            ISettingService settingService,
+            IStateProvinceService stateProvinceService,
+            IWebHelper webHelper)
         {
             _ccAvenuePaymentSettings = ccAvenuePaymentSettings;
-            _settingService = settingService;
+            _ccaCrypto = new CCACrypto();
             _currencyService = currencyService;
             _currencySettings = currencySettings;
-            _webHelper = webHelper;
-            _ccaCrypto = new CCACrypto();
+            _addressService = addressService;
+            _countryService = countryService;
             _localizationService = localizationService;
+            _settingService = settingService;
+            _stateProvinceService = stateProvinceService;
+            _webHelper = webHelper;
         }
 
         #endregion
@@ -90,22 +103,24 @@ namespace Nop.Plugin.Payments.CCAvenue
             //remotePostHelperData.Add("Checksum", myUtility.getchecksum(_ccAvenuePaymentSettings.MerchantId.ToString(), postProcessPaymentRequest.Order.Id.ToString(), postProcessPaymentRequest.Order.OrderTotal.ToString(), _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return", _ccAvenuePaymentSettings.Key));
 
             //Billing details
-            remotePostHelperData.Add("billing_name", postProcessPaymentRequest.Order.BillingAddress.FirstName);
+            var billingAddress = _addressService.GetAddressById(postProcessPaymentRequest.Order.BillingAddressId);
+
+            remotePostHelperData.Add("billing_name", billingAddress.FirstName);
             //remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1 + " " + postProcessPaymentRequest.Order.BillingAddress.Address2);
 
-            remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1);
-            remotePostHelperData.Add("billing_tel", postProcessPaymentRequest.Order.BillingAddress.PhoneNumber);
-            remotePostHelperData.Add("billing_email", postProcessPaymentRequest.Order.BillingAddress.Email);
+            remotePostHelperData.Add("billing_address", billingAddress.Address1);
+            remotePostHelperData.Add("billing_tel", billingAddress.PhoneNumber);
+            remotePostHelperData.Add("billing_email", billingAddress.Email);
 
-            remotePostHelperData.Add("billing_city", postProcessPaymentRequest.Order.BillingAddress.City);
-            var billingStateProvince = postProcessPaymentRequest.Order.BillingAddress.StateProvince;
+            remotePostHelperData.Add("billing_city", billingAddress.City);
+            var billingStateProvince = _stateProvinceService.GetStateProvinceByAddress(billingAddress);
             remotePostHelperData.Add("billing_state", billingStateProvince != null ? billingStateProvince.Abbreviation : string.Empty);
-            remotePostHelperData.Add("billing_zip", postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode);
-            var billingCountry = postProcessPaymentRequest.Order.BillingAddress.Country;
+            remotePostHelperData.Add("billing_zip", billingAddress.ZipPostalCode);
+            var billingCountry = _countryService.GetCountryByAddress(billingAddress);
             remotePostHelperData.Add("billing_country", billingCountry != null ? billingCountry.Name : string.Empty);
 
             //Delivery details
-            var shippingAddress = postProcessPaymentRequest.Order.ShippingAddress;
+            var shippingAddress = _addressService.GetAddressById(postProcessPaymentRequest.Order.ShippingAddressId ?? 0);
 
             if (postProcessPaymentRequest.Order.ShippingStatus != ShippingStatus.ShippingNotRequired)
             {
@@ -115,9 +130,9 @@ namespace Nop.Plugin.Payments.CCAvenue
                 //   remotePostHelper.Add("delivery_cust_notes", string.Empty);
                 remotePostHelperData.Add("delivery_tel", shippingAddress?.PhoneNumber ?? string.Empty);
                 remotePostHelperData.Add("delivery_city", shippingAddress?.City ?? string.Empty);
-                remotePostHelperData.Add("delivery_state", shippingAddress?.StateProvince?.Abbreviation ?? string.Empty);
+                remotePostHelperData.Add("delivery_state", _stateProvinceService.GetStateProvinceByAddress(shippingAddress)?.Abbreviation ?? string.Empty);
                 remotePostHelperData.Add("delivery_zip", shippingAddress?.ZipPostalCode ?? string.Empty);
-                remotePostHelperData.Add("delivery_country", shippingAddress?.Country?.Name ?? string.Empty);
+                remotePostHelperData.Add("delivery_country", _countryService.GetCountryByAddress(shippingAddress)?.Name ?? string.Empty);
             }
 
             remotePostHelperData.Add("Merchant_Param", _ccAvenuePaymentSettings.MerchantParam);
@@ -285,20 +300,23 @@ namespace Nop.Plugin.Payments.CCAvenue
             _settingService.SaveSetting(settings);
 
             //locales
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.RedirectionTip", "You will be redirected to CCAvenue site to complete the order.");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId", "Merchant ID");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId.Hint", "Enter merchant ID.");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.Key", "Working Key");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.Key.Hint", "Enter working key.");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam", "Merchant Param");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam.Hint", "Enter merchant param.");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri", "Pay URI");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint", "Enter Pay URI.");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee", "Additional fee");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint", "Enter additional fee to charge your customers.");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode", "Access Code");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint", "Enter Access Code.");
-            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription", "For payment you will be redirected to the CCAvenue website.");
+            _localizationService.AddPluginLocaleResource(new Dictionary<string, string>
+            {
+                ["Plugins.Payments.CCAvenue.RedirectionTip"] = "You will be redirected to CCAvenue site to complete the order.",
+                ["Plugins.Payments.CCAvenue.MerchantId"] = "Merchant ID",
+                ["Plugins.Payments.CCAvenue.MerchantId.Hint"] = "Enter merchant ID.",
+                ["Plugins.Payments.CCAvenue.Key"] = "Working Key",
+                ["Plugins.Payments.CCAvenue.Key.Hint"] = "Enter working key.",
+                ["Plugins.Payments.CCAvenue.MerchantParam"] = "Merchant Param",
+                ["Plugins.Payments.CCAvenue.MerchantParam.Hint"] = "Enter merchant param.",
+                ["Plugins.Payments.CCAvenue.PayUri"] = "Pay URI",
+                ["Plugins.Payments.CCAvenue.PayUri.Hint"] = "Enter Pay URI.",
+                ["Plugins.Payments.CCAvenue.AdditionalFee"] = "Additional fee",
+                ["Plugins.Payments.CCAvenue.AdditionalFee.Hint"] = "Enter additional fee to charge your customers.",
+                ["Plugins.Payments.CCAvenue.AccessCode"] = "Access Code",
+                ["Plugins.Payments.CCAvenue.AccessCode.Hint"] = "Enter Access Code.",
+                ["Plugins.Payments.CCAvenue.PaymentMethodDescription"] = "For payment you will be redirected to the CCAvenue website."
+            });
 
             base.Install();
         }
@@ -308,20 +326,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             _settingService.DeleteSetting<CCAvenuePaymentSettings>();
 
             //locales
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.RedirectionTip");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantId.Hint");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.Key");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.Key.Hint");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.MerchantParam.Hint");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PayUri.Hint");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AdditionalFee.Hint");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.AccessCode.Hint");
-            _localizationService.DeletePluginLocaleResource("Plugins.Payments.CCAvenue.PaymentMethodDescription");
+            _localizationService.DeletePluginLocaleResources("Plugins.Payments.CCAvenue");
             base.Uninstall();
         }
         #endregion

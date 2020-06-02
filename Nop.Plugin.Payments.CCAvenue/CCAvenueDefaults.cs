@@ -14,5 +14,10 @@
         /// Gets pay link url
         /// </summary>
         public static string PayUri => "https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction";
+
+        /// <summary>
+        /// Gets the return route name
+        /// </summary>
+        public static string ReturnRouteName => "Plugin.Payments.CCAvenue.Return";
     }
 }

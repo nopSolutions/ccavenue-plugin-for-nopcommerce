@@ -82,7 +82,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             for (var i = 1; i <= num; i++)
             {
                 str += "0";
-                str = str.Substring(1, str.Length - 1);
+                str = str[1..];
             }
             return str;
         }
@@ -92,7 +92,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             for (var i = 1; i <= num; i++)
             {
                 str = "0" + str;
-                str = str.Substring(0, str.Length - 1);
+                str = str[0..^1];
             }
             return str;
         }
@@ -102,7 +102,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             long dec = 0;
             for (var n = 0; n < strNum.Length; n++)
             {
-                dec += (long.Parse(strNum.Substring(n, 1)) * (long)Math.Pow(2, strNum.Length - (n + 1)));
+                dec += long.Parse(strNum.Substring(n, 1)) * (long)Math.Pow(2, strNum.Length - (n + 1));
             }
             return dec;
         }

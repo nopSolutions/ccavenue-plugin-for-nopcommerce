@@ -63,6 +63,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         [HttpPost]
         [AuthorizeAdmin]
         [Area(AreaNames.Admin)]
+        [AutoValidateAntiforgeryToken]
         public IActionResult Configure(ConfigurationModel model)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
@@ -123,8 +124,9 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             if (order == null)
                 return RedirectToAction("Index", "Home", new { area = string.Empty });
 
-            order.OrderNotes.Add(new OrderNote
+            _orderService.InsertOrderNote(new OrderNote
             {
+                OrderId = order.Id,
                 Note = sb.ToString(),
                 DisplayToCustomer = false,
                 CreatedOnUtc = DateTime.UtcNow
