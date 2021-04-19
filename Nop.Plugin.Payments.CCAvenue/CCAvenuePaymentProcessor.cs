@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using CCA.Util;
 using Microsoft.AspNetCore.Http;
 using Nop.Core;
@@ -71,17 +72,23 @@ namespace Nop.Plugin.Payments.CCAvenue
         /// Process a payment
         /// </summary>
         /// <param name="processPaymentRequest">Payment info required for an order processing</param>
-        /// <returns>Process payment result</returns>
-        public ProcessPaymentResult ProcessPayment(ProcessPaymentRequest processPaymentRequest)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the process payment result
+        /// </returns>
+        public Task<ProcessPaymentResult> ProcessPaymentAsync(ProcessPaymentRequest processPaymentRequest)
         {
-            return new ProcessPaymentResult { NewPaymentStatus = PaymentStatus.Pending };
+            var result = new ProcessPaymentResult { NewPaymentStatus = PaymentStatus.Pending };
+
+            return Task.FromResult(result);
         }
 
         /// <summary>
         /// Post process payment (used by payment gateways that require redirecting to a third-party URL)
         /// </summary>
         /// <param name="postProcessPaymentRequest">Payment info required for an order processing</param>
-        public void PostProcessPayment(PostProcessPaymentRequest postProcessPaymentRequest)
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public async Task PostProcessPaymentAsync(PostProcessPaymentRequest postProcessPaymentRequest)
         {
             var remotePostHelperData = new Dictionary<string, string>();
             var remotePostHelper = new RemotePost
@@ -92,7 +99,7 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             remotePostHelperData.Add("Merchant_Id", _ccAvenuePaymentSettings.MerchantId);
             remotePostHelperData.Add("Amount", postProcessPaymentRequest.Order.OrderTotal.ToString(new CultureInfo("en-US", false).NumberFormat));
-            remotePostHelperData.Add("Currency", _currencyService.GetCurrencyById(_currencySettings.PrimaryStoreCurrencyId).CurrencyCode);
+            remotePostHelperData.Add("Currency", (await _currencyService.GetCurrencyByIdAsync(_currencySettings.PrimaryStoreCurrencyId)).CurrencyCode);
             remotePostHelperData.Add("Order_Id", postProcessPaymentRequest.Order.Id.ToString());
             remotePostHelperData.Add("Redirect_Url", _webHelper.GetStoreLocation() + "Plugins/PaymentCCAvenue/Return");
 
@@ -103,7 +110,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             //remotePostHelperData.Add("Checksum", myUtility.getchecksum(_ccAvenuePaymentSettings.MerchantId.ToString(), postProcessPaymentRequest.Order.Id.ToString(), postProcessPaymentRequest.Order.OrderTotal.ToString(), _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return", _ccAvenuePaymentSettings.Key));
 
             //Billing details
-            var billingAddress = _addressService.GetAddressById(postProcessPaymentRequest.Order.BillingAddressId);
+            var billingAddress = await _addressService.GetAddressByIdAsync(postProcessPaymentRequest.Order.BillingAddressId);
 
             remotePostHelperData.Add("billing_name", billingAddress.FirstName);
             //remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1 + " " + postProcessPaymentRequest.Order.BillingAddress.Address2);
@@ -113,14 +120,14 @@ namespace Nop.Plugin.Payments.CCAvenue
             remotePostHelperData.Add("billing_email", billingAddress.Email);
 
             remotePostHelperData.Add("billing_city", billingAddress.City);
-            var billingStateProvince = _stateProvinceService.GetStateProvinceByAddress(billingAddress);
+            var billingStateProvince = await _stateProvinceService.GetStateProvinceByAddressAsync(billingAddress);
             remotePostHelperData.Add("billing_state", billingStateProvince != null ? billingStateProvince.Abbreviation : string.Empty);
             remotePostHelperData.Add("billing_zip", billingAddress.ZipPostalCode);
-            var billingCountry = _countryService.GetCountryByAddress(billingAddress);
+            var billingCountry = await _countryService.GetCountryByAddressAsync(billingAddress);
             remotePostHelperData.Add("billing_country", billingCountry != null ? billingCountry.Name : string.Empty);
 
             //Delivery details
-            var shippingAddress = _addressService.GetAddressById(postProcessPaymentRequest.Order.ShippingAddressId ?? 0);
+            var shippingAddress = await _addressService.GetAddressByIdAsync(postProcessPaymentRequest.Order.ShippingAddressId ?? 0);
 
             if (postProcessPaymentRequest.Order.ShippingStatus != ShippingStatus.ShippingNotRequired)
             {
@@ -130,19 +137,17 @@ namespace Nop.Plugin.Payments.CCAvenue
                 //   remotePostHelper.Add("delivery_cust_notes", string.Empty);
                 remotePostHelperData.Add("delivery_tel", shippingAddress?.PhoneNumber ?? string.Empty);
                 remotePostHelperData.Add("delivery_city", shippingAddress?.City ?? string.Empty);
-                remotePostHelperData.Add("delivery_state", _stateProvinceService.GetStateProvinceByAddress(shippingAddress)?.Abbreviation ?? string.Empty);
+                remotePostHelperData.Add("delivery_state", (await _stateProvinceService.GetStateProvinceByAddressAsync(shippingAddress))?.Abbreviation ?? string.Empty);
                 remotePostHelperData.Add("delivery_zip", shippingAddress?.ZipPostalCode ?? string.Empty);
-                remotePostHelperData.Add("delivery_country", _countryService.GetCountryByAddress(shippingAddress)?.Name ?? string.Empty);
+                remotePostHelperData.Add("delivery_country", (await _countryService.GetCountryByAddressAsync(shippingAddress))?.Name ?? string.Empty);
             }
 
             remotePostHelperData.Add("Merchant_Param", _ccAvenuePaymentSettings.MerchantParam);
 
             var strPOSTData = string.Empty;
             foreach (var item in remotePostHelperData)
-            {
                 //strPOSTData = strPOSTData +  item.Key.ToLower() + "=" + item.Value.ToLower() + "&";
                 strPOSTData = strPOSTData + item.Key.ToLower() + "=" + item.Value + "&";
-            }
 
             try
             {
@@ -161,92 +166,121 @@ namespace Nop.Plugin.Payments.CCAvenue
         /// <summary>
         /// Returns a value indicating whether payment method should be hidden during checkout
         /// </summary>
-        /// <param name="cart">Shoping cart</param>
-        /// <returns>true - hide; false - display.</returns>
-        public bool HidePaymentMethod(IList<ShoppingCartItem> cart)
+        /// <param name="cart">Shopping cart</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the rue - hide; false - display.
+        /// </returns>
+        public Task<bool> HidePaymentMethodAsync(IList<ShoppingCartItem> cart)
         {
             //you can put any logic here
             //for example, hide this payment method if all products in the cart are downloadable
             //or hide this payment method if current customer is from certain country
-            return false;
+            return Task.FromResult(false);
         }
 
         /// <summary>
         /// Gets additional handling fee
         /// </summary>
-        /// <param name="cart">Shoping cart</param>
-        /// <returns>Additional handling fee</returns>
-        public decimal GetAdditionalHandlingFee(IList<ShoppingCartItem> cart)
+        /// <param name="cart">Shopping cart</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the additional handling fee
+        /// </returns>
+        public Task<decimal> GetAdditionalHandlingFeeAsync(IList<ShoppingCartItem> cart)
         {
-            return _ccAvenuePaymentSettings.AdditionalFee;
+            return Task.FromResult(_ccAvenuePaymentSettings.AdditionalFee);
         }
 
         /// <summary>
         /// Captures payment
         /// </summary>
         /// <param name="capturePaymentRequest">Capture payment request</param>
-        /// <returns>Capture payment result</returns>
-        public CapturePaymentResult Capture(CapturePaymentRequest capturePaymentRequest)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the capture payment result
+        /// </returns>
+        public Task<CapturePaymentResult> CaptureAsync(CapturePaymentRequest capturePaymentRequest)
         {
             var result = new CapturePaymentResult();
             result.AddError("Capture method not supported");
-            return result;
+
+            return Task.FromResult(result);
         }
 
         /// <summary>
         /// Refunds a payment
         /// </summary>
         /// <param name="refundPaymentRequest">Request</param>
-        /// <returns>Result</returns>
-        public RefundPaymentResult Refund(RefundPaymentRequest refundPaymentRequest)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the result
+        /// </returns>
+        public Task<RefundPaymentResult> RefundAsync(RefundPaymentRequest refundPaymentRequest)
         {
             var result = new RefundPaymentResult();
             result.AddError("Refund method not supported");
-            return result;
+
+            return Task.FromResult(result);
         }
 
         /// <summary>
         /// Voids a payment
         /// </summary>
         /// <param name="voidPaymentRequest">Request</param>
-        /// <returns>Result</returns>
-        public VoidPaymentResult Void(VoidPaymentRequest voidPaymentRequest)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the result
+        /// </returns>
+        public Task<VoidPaymentResult> VoidAsync(VoidPaymentRequest voidPaymentRequest)
         {
             var result = new VoidPaymentResult();
             result.AddError("Void method not supported");
-            return result;
+
+            return Task.FromResult(result);
         }
 
         /// <summary>
         /// Process recurring payment
         /// </summary>
         /// <param name="processPaymentRequest">Payment info required for an order processing</param>
-        /// <returns>Process payment result</returns>
-        public ProcessPaymentResult ProcessRecurringPayment(ProcessPaymentRequest processPaymentRequest)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the process payment result
+        /// </returns>
+        public Task<ProcessPaymentResult> ProcessRecurringPaymentAsync(ProcessPaymentRequest processPaymentRequest)
         {
             var result = new ProcessPaymentResult();
             result.AddError("Recurring payment not supported");
-            return result;
+
+            return Task.FromResult(result);
         }
 
         /// <summary>
         /// Cancels a recurring payment
         /// </summary>
         /// <param name="cancelPaymentRequest">Request</param>
-        /// <returns>Result</returns>
-        public CancelRecurringPaymentResult CancelRecurringPayment(CancelRecurringPaymentRequest cancelPaymentRequest)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the result
+        /// </returns>
+        public Task<CancelRecurringPaymentResult> CancelRecurringPaymentAsync(CancelRecurringPaymentRequest cancelPaymentRequest)
         {
             var result = new CancelRecurringPaymentResult();
             result.AddError("Recurring payment not supported");
-            return result;
+
+            return Task.FromResult(result);
         }
 
         /// <summary>
         /// Gets a value indicating whether customers can complete a payment after order is placed but not completed (for redirection payment methods)
         /// </summary>
         /// <param name="order">Order</param>
-        /// <returns>Result</returns>
-        public bool CanRePostProcessPayment(Order order)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the result
+        /// </returns>
+        public Task<bool> CanRePostProcessPaymentAsync(Order order)
         {
             if (order == null)
                 throw new ArgumentNullException(nameof(order));
@@ -256,35 +290,64 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             //payment status should be Pending
             if (order.PaymentStatus != PaymentStatus.Pending)
-                return false;
+                return Task.FromResult(false);
 
             //let's ensure that at least 1 minute passed after order is placed
-            return !((DateTime.UtcNow - order.CreatedOnUtc).TotalMinutes < 1);
+            return Task.FromResult(!((DateTime.UtcNow - order.CreatedOnUtc).TotalMinutes < 1));
         }
 
+        /// <summary>
+        /// Gets a configuration page URL
+        /// </summary>
         public override string GetConfigurationPageUrl()
         {
             return $"{_webHelper.GetStoreLocation()}Admin/PaymentCCAvenue/Configure";
         }
 
-        public IList<string> ValidatePaymentForm(IFormCollection form)
+        /// <summary>
+        /// Validate payment form
+        /// </summary>
+        /// <param name="form">The parsed form values</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the list of validating errors
+        /// </returns>
+        public Task<IList<string>> ValidatePaymentFormAsync(IFormCollection form)
         {
             var warnings = new List<string>();
-            return warnings;
+
+            return Task.FromResult<IList<string>>(warnings);
         }
 
-        public ProcessPaymentRequest GetPaymentInfo(IFormCollection form)
+        /// <summary>
+        /// Get payment information
+        /// </summary>
+        /// <param name="form">The parsed form values</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the payment info holder
+        /// </returns>
+        public Task<ProcessPaymentRequest> GetPaymentInfoAsync(IFormCollection form)
         {
             var paymentInfo = new ProcessPaymentRequest();
-            return paymentInfo;
+
+            return Task.FromResult(paymentInfo);
         }
 
+        /// <summary>
+        /// Gets a name of a view component for displaying plugin in public store ("payment info" checkout step)
+        /// </summary>
+        /// <returns>View component name</returns>
         public string GetPublicViewComponentName()
         {
             return CCAvenueDefaults.VIEW_COMPONENT_NAME;
         }
 
-        public override void Install()
+        /// <summary>
+        /// Install plugin
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public override async Task InstallAsync()
         {
             var settings = new CCAvenuePaymentSettings()
             {
@@ -297,10 +360,10 @@ namespace Nop.Plugin.Payments.CCAvenue
                 PayUri = CCAvenueDefaults.PayUri,
                 AdditionalFee = 0,
             };
-            _settingService.SaveSetting(settings);
+            await _settingService.SaveSettingAsync(settings);
 
             //locales
-            _localizationService.AddPluginLocaleResource(new Dictionary<string, string>
+            await _localizationService.AddLocaleResourceAsync(new Dictionary<string, string>
             {
                 ["Plugins.Payments.CCAvenue.RedirectionTip"] = "You will be redirected to CCAvenue site to complete the order.",
                 ["Plugins.Payments.CCAvenue.MerchantId"] = "Merchant ID",
@@ -318,17 +381,31 @@ namespace Nop.Plugin.Payments.CCAvenue
                 ["Plugins.Payments.CCAvenue.PaymentMethodDescription"] = "For payment you will be redirected to the CCAvenue website."
             });
 
-            base.Install();
+            await base.InstallAsync();
         }
 
-        public override void Uninstall()
+        /// <summary>
+        /// Uninstall plugin
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public override async Task UninstallAsync()
         {
-            _settingService.DeleteSetting<CCAvenuePaymentSettings>();
+            await _settingService.DeleteSettingAsync<CCAvenuePaymentSettings>();
 
             //locales
-            _localizationService.DeletePluginLocaleResources("Plugins.Payments.CCAvenue");
-            base.Uninstall();
+            await _localizationService.DeleteLocaleResourcesAsync("Plugins.Payments.CCAvenue");
+            await base.UninstallAsync();
         }
+
+        /// <summary>
+        /// Gets a payment method description that will be displayed on checkout pages in the public store
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public async Task<string> GetPaymentMethodDescriptionAsync()
+        {
+            return await _localizationService.GetResourceAsync("Plugins.Payments.CCAvenue.PaymentMethodDescription");
+        }
+
         #endregion
 
         #region Properies
@@ -364,11 +441,6 @@ namespace Nop.Plugin.Payments.CCAvenue
         public PaymentMethodType PaymentMethodType => PaymentMethodType.Redirection;
 
         public bool SkipPaymentInfo => false;
-
-        /// <summary>
-        /// Gets a payment method description that will be displayed on checkout pages in the public store
-        /// </summary>
-        public string PaymentMethodDescription => _localizationService.GetResource("Plugins.Payments.CCAvenue.PaymentMethodDescription");
 
         #endregion
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.Text;
+using System.Threading.Tasks;
 using CCA.Util;
 using Microsoft.AspNetCore.Mvc;
 using Nop.Core;
@@ -42,9 +43,9 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
         [AuthorizeAdmin]
         [Area(AreaNames.Admin)]
-        public IActionResult Configure()
+        public async Task<IActionResult> Configure()
         {
-            if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManagePaymentMethods))
                 return AccessDeniedView();
 
             var model = new ConfigurationModel
@@ -64,13 +65,13 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
         [AuthorizeAdmin]
         [Area(AreaNames.Admin)]
         [AutoValidateAntiforgeryToken]
-        public IActionResult Configure(ConfigurationModel model)
+        public async Task<IActionResult> Configure(ConfigurationModel model)
         {
-            if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManagePaymentMethods))
                 return AccessDeniedView();
 
             if (!ModelState.IsValid)
-                return Configure();
+                return await Configure();
 
             //save settings
             _ccAvenuePaymentSettings.MerchantId = model.MerchantId;
@@ -79,14 +80,14 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             _ccAvenuePaymentSettings.PayUri = model.PayUri;
             _ccAvenuePaymentSettings.AdditionalFee = model.AdditionalFee;
             _ccAvenuePaymentSettings.AccessCode = model.AccessCode;
-            _settingService.SaveSetting(_ccAvenuePaymentSettings);
+            await _settingService.SaveSettingAsync(_ccAvenuePaymentSettings);
 
-            return Configure();
+            return await Configure();
         }
 
-        public ActionResult Return()
+        public async Task<ActionResult> Return()
         {
-            if (!(_paymentPluginManager.LoadPluginBySystemName("Payments.CCAvenue") is CCAvenuePaymentProcessor processor) ||
+            if (!(await _paymentPluginManager.LoadPluginBySystemNameAsync("Payments.CCAvenue") is CCAvenuePaymentProcessor processor) ||
                 !_paymentPluginManager.IsPluginActive(processor) ||
                 !processor.PluginDescriptor.Installed)
                 throw new NopException("CCAvenue module cannot be loaded");
@@ -119,12 +120,12 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             var orderId = paramList["Order_Id"];
             var authDesc = paramList["order_status"];
 
-            var order = _orderService.GetOrderById(Convert.ToInt32(orderId));
+            var order = await _orderService.GetOrderByIdAsync(Convert.ToInt32(orderId));
 
             if (order == null)
                 return RedirectToAction("Index", "Home", new { area = string.Empty });
 
-            _orderService.InsertOrderNote(new OrderNote
+            await _orderService.InsertOrderNoteAsync(new OrderNote
             {
                 OrderId = order.Id,
                 Note = sb.ToString(),
@@ -147,7 +148,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
 
             if (_orderProcessingService.CanMarkOrderAsPaid(order))
             {
-                _orderProcessingService.MarkOrderAsPaid(order);
+                await _orderProcessingService.MarkOrderAsPaidAsync(order);
             }
 
             //thank you for shopping with us. Your credit card has been charged and your transaction is successful
