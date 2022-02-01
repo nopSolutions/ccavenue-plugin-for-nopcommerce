@@ -32,6 +32,7 @@ namespace Nop.Plugin.Payments.CCAvenue
         private readonly IAddressService _addressService;
         private readonly ICountryService _countryService;
         private readonly ICurrencyService _currencyService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILocalizationService _localizationService;
         private readonly ISettingService _settingService;
         private readonly IStateProvinceService _stateProvinceService;
@@ -46,7 +47,8 @@ namespace Nop.Plugin.Payments.CCAvenue
             CurrencySettings currencySettings,
             ICurrencyService currencyService,
             IAddressService addressService,
-            ICountryService countryService,                        
+            ICountryService countryService,
+            IHttpContextAccessor httpContextAccessor,
             ILocalizationService localizationService,
             ISettingService settingService,
             IStateProvinceService stateProvinceService,
@@ -58,6 +60,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             _currencySettings = currencySettings;
             _addressService = addressService;
             _countryService = countryService;
+            _httpContextAccessor = httpContextAccessor;
             _localizationService = localizationService;
             _settingService = settingService;
             _stateProvinceService = stateProvinceService;
@@ -91,7 +94,7 @@ namespace Nop.Plugin.Payments.CCAvenue
         public async Task PostProcessPaymentAsync(PostProcessPaymentRequest postProcessPaymentRequest)
         {
             var remotePostHelperData = new Dictionary<string, string>();
-            var remotePostHelper = new RemotePost
+            var remotePostHelper = new RemotePost(_httpContextAccessor, _webHelper)
             {
                 FormName = "CCAvenueForm",
                 Url = _ccAvenuePaymentSettings.PayUri
@@ -363,7 +366,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             await _settingService.SaveSettingAsync(settings);
 
             //locales
-            await _localizationService.AddLocaleResourceAsync(new Dictionary<string, string>
+            await _localizationService.AddOrUpdateLocaleResourceAsync(new Dictionary<string, string>
             {
                 ["Plugins.Payments.CCAvenue.RedirectionTip"] = "You will be redirected to CCAvenue site to complete the order.",
                 ["Plugins.Payments.CCAvenue.MerchantId"] = "Merchant ID",
