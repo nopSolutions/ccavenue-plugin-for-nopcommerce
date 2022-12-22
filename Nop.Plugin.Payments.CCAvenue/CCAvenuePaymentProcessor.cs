@@ -9,6 +9,7 @@ using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Shipping;
+using Nop.Plugin.Payments.CCAvenue.Components;
 using Nop.Services.Common;
 using Nop.Services.Configuration;
 using Nop.Services.Directory;
@@ -341,9 +342,9 @@ namespace Nop.Plugin.Payments.CCAvenue
         /// Gets a name of a view component for displaying plugin in public store ("payment info" checkout step)
         /// </summary>
         /// <returns>View component name</returns>
-        public string GetPublicViewComponentName()
+        public Type GetPublicViewComponent()
         {
-            return CCAvenueDefaults.VIEW_COMPONENT_NAME;
+            return typeof(PaymentCcAvenueViewComponent);
         }
 
         /// <summary>

@@ -3,7 +3,7 @@ using Nop.Web.Framework.Components;
 
 namespace Nop.Plugin.Payments.CCAvenue.Components
 {
-    [ViewComponent(Name = CCAvenueDefaults.VIEW_COMPONENT_NAME)]
+    [ViewComponent(Name = "PaymentCCAvenue")]
     public class PaymentCcAvenueViewComponent : NopViewComponent
     {
         public IViewComponentResult Invoke()
