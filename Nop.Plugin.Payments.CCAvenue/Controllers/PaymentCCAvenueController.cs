@@ -55,7 +55,8 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
                 MerchantParam = _ccAvenuePaymentSettings.MerchantParam,
                 PayUri = _ccAvenuePaymentSettings.PayUri,
                 AdditionalFee = _ccAvenuePaymentSettings.AdditionalFee,
-                AccessCode = _ccAvenuePaymentSettings.AccessCode
+                AccessCode = _ccAvenuePaymentSettings.AccessCode,
+                EnableStatusCheckAndConfirmApi = _ccAvenuePaymentSettings.EnableStatusCheckAndConfirmApi
             };
 
             return View("~/Plugins/Payments.CCAvenue/Views/Configure.cshtml", model);
@@ -80,6 +81,7 @@ namespace Nop.Plugin.Payments.CCAvenue.Controllers
             _ccAvenuePaymentSettings.PayUri = model.PayUri;
             _ccAvenuePaymentSettings.AdditionalFee = model.AdditionalFee;
             _ccAvenuePaymentSettings.AccessCode = model.AccessCode;
+            _ccAvenuePaymentSettings.EnableStatusCheckAndConfirmApi = model.EnableStatusCheckAndConfirmApi;
             await _settingService.SaveSettingAsync(_ccAvenuePaymentSettings);
 
             return await Configure();

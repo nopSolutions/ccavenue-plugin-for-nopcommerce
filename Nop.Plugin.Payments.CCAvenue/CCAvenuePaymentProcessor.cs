@@ -8,6 +8,7 @@ using Nop.Core;
 using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
+using Nop.Core.Domain.ScheduleTasks;
 using Nop.Core.Domain.Shipping;
 using Nop.Services.Common;
 using Nop.Services.Configuration;
@@ -15,6 +16,7 @@ using Nop.Services.Directory;
 using Nop.Services.Localization;
 using Nop.Services.Payments;
 using Nop.Services.Plugins;
+using Nop.Services.ScheduleTasks;
 using Nop.Web.Framework;
 
 namespace Nop.Plugin.Payments.CCAvenue
@@ -37,7 +39,7 @@ namespace Nop.Plugin.Payments.CCAvenue
         private readonly ISettingService _settingService;
         private readonly IStateProvinceService _stateProvinceService;
         private readonly IWebHelper _webHelper;
-
+        private readonly IScheduleTaskService _scheduleTaskService;
         #endregion
 
         #region Ctor
@@ -52,6 +54,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             ILocalizationService localizationService,
             ISettingService settingService,
             IStateProvinceService stateProvinceService,
+            IScheduleTaskService scheduleTaskService,
             IWebHelper webHelper)
         {
             _ccAvenuePaymentSettings = ccAvenuePaymentSettings;
@@ -64,6 +67,7 @@ namespace Nop.Plugin.Payments.CCAvenue
             _localizationService = localizationService;
             _settingService = settingService;
             _stateProvinceService = stateProvinceService;
+            _scheduleTaskService = scheduleTaskService;
             _webHelper = webHelper;
         }
 
@@ -381,12 +385,33 @@ namespace Nop.Plugin.Payments.CCAvenue
                 ["Plugins.Payments.CCAvenue.AdditionalFee.Hint"] = "Enter additional fee to charge your customers.",
                 ["Plugins.Payments.CCAvenue.AccessCode"] = "Access Code",
                 ["Plugins.Payments.CCAvenue.AccessCode.Hint"] = "Enter Access Code.",
+                ["Plugins.Payments.CCAvenue.EnableStatusCheckAndConfirmApi"] = "Enable Status Check And Confirm Api",
+                ["Plugins.Payments.CCAvenue.EnableStatusCheckAndConfirmApi.Hint"] = "This will make schedule task to check for pending orders and automatically confirms them if found to be paid, make sure you have whitelisted IPAddress of the hosting server to API calls",
                 ["Plugins.Payments.CCAvenue.PaymentMethodDescription"] = "For payment you will be redirected to the CCAvenue website."
             });
+
+            var taskName = GetTaskName<CheckCCAvenuePaymentTask>();
+            var task = await _scheduleTaskService.GetTaskByTypeAsync(taskName);
+            if (task == null)
+            {
+                task = new ScheduleTask()
+                {
+                    Enabled = true,
+                    Name = "CCAvenue : Check Order Payment Status",
+                    Seconds = 60 * 60,
+                    StopOnError = false,
+                    Type = taskName,
+                };
+                await _scheduleTaskService.InsertTaskAsync(task);
+            }
 
             await base.InstallAsync();
         }
 
+        public static string GetTaskName<T>()
+        {
+            return $"{typeof(T).FullName}, {typeof(T).Assembly.GetName().Name}";
+        }
         /// <summary>
         /// Uninstall plugin
         /// </summary>
@@ -397,6 +422,13 @@ namespace Nop.Plugin.Payments.CCAvenue
 
             //locales
             await _localizationService.DeleteLocaleResourcesAsync("Plugins.Payments.CCAvenue");
+            //schedule task
+            string taskName = GetTaskName<CheckCCAvenuePaymentTask>();
+            ScheduleTask task = await _scheduleTaskService.GetTaskByTypeAsync(taskName);
+            if (task == null)
+            {
+                await _scheduleTaskService.DeleteTaskAsync(task);
+            }
             await base.UninstallAsync();
         }
 

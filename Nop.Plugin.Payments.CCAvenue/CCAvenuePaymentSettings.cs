@@ -10,5 +10,6 @@ namespace Nop.Plugin.Payments.CCAvenue
         public string PayUri { get; set; }
         public decimal AdditionalFee { get; set; }
         public string AccessCode { get; set; }
+        public bool EnableStatusCheckAndConfirmApi { get; set; }
     }
 }
