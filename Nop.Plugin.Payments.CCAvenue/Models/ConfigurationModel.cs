@@ -22,5 +22,8 @@ namespace Nop.Plugin.Payments.CCAvenue.Models
 
         [NopResourceDisplayName("Plugins.Payments.CCAvenue.AccessCode")] //Access Code
         public string AccessCode { get; set; }
+
+        [NopResourceDisplayName("Plugins.Payments.CCAvenue.EnableStatusCheckAndConfirmApi")]
+        public bool EnableStatusCheckAndConfirmApi { get; set; }
     }
 }
