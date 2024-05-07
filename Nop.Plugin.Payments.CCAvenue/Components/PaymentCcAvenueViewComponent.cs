@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Nop.Web.Framework.Components;
 
-namespace Nop.Plugin.Payments.CCAvenue.Components
+namespace Nop.Plugin.Payments.CCAvenue.Components;
+
+[ViewComponent(Name = "PaymentCCAvenue")]
+public class PaymentCcAvenueViewComponent : NopViewComponent
 {
-    [ViewComponent(Name = "PaymentCCAvenue")]
-    public class PaymentCcAvenueViewComponent : NopViewComponent
+    public IViewComponentResult Invoke()
     {
-        public IViewComponentResult Invoke()
-        {
-            return View("~/Plugins/Payments.CCAvenue/Views/PaymentInfo.cshtml");
-        }
+        return View("~/Plugins/Payments.CCAvenue/Views/PaymentInfo.cshtml");
     }
 }
