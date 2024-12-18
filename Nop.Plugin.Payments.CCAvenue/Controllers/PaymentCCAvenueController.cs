@@ -21,31 +21,26 @@ public class PaymentCCAvenueController : BasePaymentController
     private readonly IOrderService _orderService;
     private readonly IOrderProcessingService _orderProcessingService;
     private readonly IPaymentPluginManager _paymentPluginManager;
-    private readonly IPermissionService _permissionService;
     private readonly ISettingService _settingService;
 
     public PaymentCCAvenueController(CCAvenuePaymentSettings ccAvenuePaymentSettings,
         IOrderService orderService,
         IOrderProcessingService orderProcessingService,
         IPaymentPluginManager paymentPluginManager,
-        IPermissionService permissionService,
         ISettingService settingService)
     {
         _ccAvenuePaymentSettings = ccAvenuePaymentSettings;
         _orderService = orderService;
         _orderProcessingService = orderProcessingService;
         _paymentPluginManager = paymentPluginManager;
-        _permissionService = permissionService;
         _settingService = settingService;
     }
 
     [AuthorizeAdmin]
     [Area(AreaNames.ADMIN)]
-    public async Task<IActionResult> Configure()
+    [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
+    public IActionResult Configure()
     {
-        if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManagePaymentMethods))
-            return AccessDeniedView();
-
         var model = new ConfigurationModel
         {
             MerchantId = _ccAvenuePaymentSettings.MerchantId,
@@ -63,13 +58,11 @@ public class PaymentCCAvenueController : BasePaymentController
     [AuthorizeAdmin]
     [Area(AreaNames.ADMIN)]
     [AutoValidateAntiforgeryToken]
+    [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
     public async Task<IActionResult> Configure(ConfigurationModel model)
     {
-        if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManagePaymentMethods))
-            return AccessDeniedView();
-
         if (!ModelState.IsValid)
-            return await Configure();
+            return Configure();
 
         //save settings
         _ccAvenuePaymentSettings.MerchantId = model.MerchantId;
@@ -80,7 +73,7 @@ public class PaymentCCAvenueController : BasePaymentController
         _ccAvenuePaymentSettings.AccessCode = model.AccessCode;
         await _settingService.SaveSettingAsync(_ccAvenuePaymentSettings);
 
-        return await Configure();
+        return Configure();
     }
 
     public async Task<ActionResult> Return()
@@ -90,7 +83,7 @@ public class PaymentCCAvenueController : BasePaymentController
             !processor.PluginDescriptor.Installed)
             throw new NopException("CCAvenue module cannot be loaded");
 
-        //assign following values to send it to verifychecksum function.
+        //assign following values to send it to verify checksum function.
         if (string.IsNullOrWhiteSpace(_ccAvenuePaymentSettings.Key))
             throw new NopException("CCAvenue key is not set");
 
@@ -110,10 +103,8 @@ public class PaymentCCAvenueController : BasePaymentController
 
         var sb = new StringBuilder();
         sb.AppendLine("CCAvenue:");
-        for (var i = 0; i < paramList.Count; i++)
-        {
+        for (var i = 0; i < paramList.Count; i++) 
             sb.AppendLine(paramList.Keys[i] + " = " + paramList[i]);
-        }
 
         var orderId = paramList["Order_Id"];
         var authDesc = paramList["order_status"];
@@ -131,23 +122,14 @@ public class PaymentCCAvenueController : BasePaymentController
             CreatedOnUtc = DateTime.UtcNow
         });
 
-        //var merchantId = Params["Merchant_Id"];
-        //var Amount = Params["Amount"];
-        //var myUtility = new CCAvenueHelper();
-        //var checksum = myUtility.verifychecksum(merchantId, orderId, Amount, AuthDesc, _ccAvenuePaymentSettings.Key, checksum);
-
-        if (!authDesc.Equals("Success", StringComparison.InvariantCultureIgnoreCase))
-        {
+        if (!authDesc?.Equals("Success", StringComparison.InvariantCultureIgnoreCase) ?? true) 
             return RedirectToRoute("OrderDetails", new { orderId = order.Id });
-        }
 
         //here you need to put in the routines for a successful transaction such as sending an email to customer,
-        //setting database status, informing logistics etc etc
+        //setting database status, informing logistics etc
 
-        if (_orderProcessingService.CanMarkOrderAsPaid(order))
-        {
+        if (_orderProcessingService.CanMarkOrderAsPaid(order)) 
             await _orderProcessingService.MarkOrderAsPaidAsync(order);
-        }
 
         //thank you for shopping with us. Your credit card has been charged and your transaction is successful
         return RedirectToRoute("CheckoutCompleted", new { orderId = order.Id });

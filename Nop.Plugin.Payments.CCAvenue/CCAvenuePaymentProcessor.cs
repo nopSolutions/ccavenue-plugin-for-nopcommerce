@@ -107,15 +107,11 @@ public class CCAvenuePaymentProcessor : BasePlugin, IPaymentMethod
         remotePostHelperData.Add("cancel_url", _webHelper.GetStoreLocation() + "Plugins/PaymentCCAvenue/Return");
         remotePostHelperData.Add("language", "EN");
 
-        //var myUtility = new CCAvenueHelper();
-        //remotePostHelperData.Add("Checksum", myUtility.getchecksum(_ccAvenuePaymentSettings.MerchantId.ToString(), postProcessPaymentRequest.Order.Id.ToString(), postProcessPaymentRequest.Order.OrderTotal.ToString(), _webHelper.GetStoreLocation(false) + "Plugins/PaymentCCAvenue/Return", _ccAvenuePaymentSettings.Key));
-
-        //Billing details
+        //billing details
         var billingAddress = await _addressService.GetAddressByIdAsync(postProcessPaymentRequest.Order.BillingAddressId);
 
         remotePostHelperData.Add("billing_name", billingAddress.FirstName);
-        //remotePostHelperData.Add("billing_address", postProcessPaymentRequest.Order.BillingAddress.Address1 + " " + postProcessPaymentRequest.Order.BillingAddress.Address2);
-
+        
         remotePostHelperData.Add("billing_address", billingAddress.Address1);
         remotePostHelperData.Add("billing_tel", billingAddress.PhoneNumber);
         remotePostHelperData.Add("billing_email", billingAddress.Email);
@@ -127,15 +123,13 @@ public class CCAvenuePaymentProcessor : BasePlugin, IPaymentMethod
         var billingCountry = await _countryService.GetCountryByAddressAsync(billingAddress);
         remotePostHelperData.Add("billing_country", billingCountry != null ? billingCountry.Name : string.Empty);
 
-        //Delivery details
+        //delivery details
         var shippingAddress = await _addressService.GetAddressByIdAsync(postProcessPaymentRequest.Order.ShippingAddressId ?? 0);
 
         if (postProcessPaymentRequest.Order.ShippingStatus != ShippingStatus.ShippingNotRequired)
         {
             remotePostHelperData.Add("delivery_name", shippingAddress?.FirstName ?? string.Empty);
-            //remotePostHelperData.Add("delivery_address", shippingAddress.Address1 + " " + shippingAddress.Address2);
             remotePostHelperData.Add("delivery_address", shippingAddress?.Address1 ?? string.Empty);
-            //   remotePostHelper.Add("delivery_cust_notes", string.Empty);
             remotePostHelperData.Add("delivery_tel", shippingAddress?.PhoneNumber ?? string.Empty);
             remotePostHelperData.Add("delivery_city", shippingAddress?.City ?? string.Empty);
             remotePostHelperData.Add("delivery_state", (await _stateProvinceService.GetStateProvinceByAddressAsync(shippingAddress))?.Abbreviation ?? string.Empty);
@@ -145,15 +139,15 @@ public class CCAvenuePaymentProcessor : BasePlugin, IPaymentMethod
 
         remotePostHelperData.Add("Merchant_Param", _ccAvenuePaymentSettings.MerchantParam);
 
-        var strPOSTData = string.Empty;
+        var strPostData = string.Empty;
+        
         foreach (var item in remotePostHelperData)
-            //strPOSTData = strPOSTData +  item.Key.ToLower() + "=" + item.Value.ToLower() + "&";
-            strPOSTData = strPOSTData + item.Key.ToLower() + "=" + item.Value + "&";
+            strPostData = strPostData + item.Key.ToLower() + "=" + item.Value + "&";
 
         try
         {
-            var strEncPOSTData = _ccaCrypto.Encrypt(strPOSTData, _ccAvenuePaymentSettings.Key);
-            remotePostHelper.Add("encRequest", strEncPOSTData);
+            var strEncPostData = _ccaCrypto.Encrypt(strPostData, _ccAvenuePaymentSettings.Key);
+            remotePostHelper.Add("encRequest", strEncPostData);
             remotePostHelper.Add("access_code", _ccAvenuePaymentSettings.AccessCode);
 
             remotePostHelper.Post();
@@ -287,7 +281,7 @@ public class CCAvenuePaymentProcessor : BasePlugin, IPaymentMethod
             throw new ArgumentNullException(nameof(order));
 
         //CCAvenue is the redirection payment method
-        //It also validates whether order is also paid (after redirection) so customers will not be able to pay twice
+        //it also validates whether order is also paid (after redirection) so customers will not be able to pay twice
 
         //payment status should be Pending
         if (order.PaymentStatus != PaymentStatus.Pending)
@@ -356,8 +350,6 @@ public class CCAvenuePaymentProcessor : BasePlugin, IPaymentMethod
             Key = "",
             AccessCode = "",
             MerchantParam = "",
-
-            //PayUri = "https://www.ccavenue.com/shopzone/cc_details.jsp",
             PayUri = CCAvenueDefaults.PayUri,
             AdditionalFee = 0,
         };
